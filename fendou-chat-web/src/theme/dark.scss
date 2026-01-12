@@ -1,0 +1,43 @@
+html.dark {
+  #app {
+    background-color: var(--el-bg-color-page);
+  }
+
+  .login-container{
+        background-image: linear-gradient(to right, var(--el-bg-color-page), var(--el-bg-color-page));
+    
+    .login-wrapper{
+        background-image: linear-gradient(to right, var(--el-color-info-light-9), var(--el-color-info-light-9));
+    }
+  }
+
+  .message{
+    background-color: var(--el-bg-color-page) !important;
+  }
+
+  
+  .image-message{
+    background-color: var(--el-bg-color-page) !important;
+    opacity: 0.8;
+  }
+
+  .file-message{
+    background-color: var(--el-bg-color-page) !important;
+  }
+
+  .hint{
+    background-color: var(--el-bg-color-page) !important;
+  }
+
+  .chat-list .active{
+    background-color: var(--el-bg-color-page) !important;
+  }
+
+  .chat-item:hover{
+    background-color: var(--el-bg-color-page) !important;
+  }
+
+  .emoji-mart{
+    background-color: var(--el-bg-color-page) !important;
+  }
+}

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.mapper.FriendRequestMapper">
+
+    <select id="selectFriendRequests" resultType="com.chat.domain.vo.FriendRequestVO" parameterType="com.chat.domain.dto.friend.FriendQueryDTO">
+        SELECT cfr.id,
+               cu.real_name   AS senderName,
+               cfr.status,
+               cfr.verify_msg,
+               cfr.create_time
+        FROM chat_user cu
+                 JOIN chat_friend_request cfr ON cu.id = cfr.sender_id
+        WHERE cfr.receiver_id = #{friendRequest.userId}
+        order by cfr.create_time desc
+    </select>
+</mapper>

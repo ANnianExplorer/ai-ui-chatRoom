@@ -1,0 +1,33 @@
+spring:
+  # 激活环境
+  profiles:
+    active: local
+
+  # 应用名称
+  application:
+    name: chat
+
+  # 热部署配置
+  devtools:
+    add-properties: false
+    restart:
+      enabled: true  # 设置 false 禁用热部署
+
+  # 全局日期格式
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+  # 文件上传大小配置
+  servlet:
+    multipart:
+      max-file-size: 10MB # 单个文件大小限制
+      max-request-size: 20MB # 整个请求大小限制
+
+# mybatis-plus 配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      table-prefix: chat_

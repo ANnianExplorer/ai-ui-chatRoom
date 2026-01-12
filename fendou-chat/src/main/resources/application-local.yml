@@ -1,0 +1,60 @@
+# 服务端口
+server:
+  port: 8090
+spring:
+  # redis 配置
+  data:
+    redis:
+      host: 127.0.0.1 # 设置redis地址
+      port: 6379 # 设置redis端口
+      database: 0 # 设置redis数据库索引
+      timeout: 10000 # 连接超时时间
+      lettuce:
+        pool:
+          max-wait: -1 # 最大等待时间（-1 没有限制）
+          max-idle: 5 # 最大空闲连接数
+          min-idle: 0 # 最小空闲连接数
+          max-active: 20 # 最大连接数
+
+  # mysql 配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/fen_dou_chats?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: yzh521
+
+  devtools:
+    restart:
+      enabled: false # 禁用热部署
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# netty 配置
+netty:
+  host: 127.0.0.1
+  port: 9090
+
+# 文件存储配置
+storage:
+  # 存储策略支持 local 默认：local
+  strategy: local
+  local:
+    domain: http://127.0.0.1:${server.port} # 域名
+    path: D://chat # 文件存储路径,本地存储
+
+# 日志配置
+logging:
+  level:
+    com.chat: debug
+    org.springframework: info
+
+# 支持多种大模型，不限于以下模型
+ai:
+  model: glm-4-flash-250414 # 智谱语言模型名称，这个模型是免费的，想要更好的性能去官网看，换成其他付费的即可https://docs.bigmodel.cn/cn/guide/models/text/glm-4.5
+  api-key: xx.xx # 访问密钥
+  api-url: https://open.bigmodel.cn/api/paas/v4/chat/completions # 请求地址
+#  model: qwq-32b       # 阿里百炼语言模型名称
+#  api-key: sk-xxxxxxxxxxxx
+#  api-url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions

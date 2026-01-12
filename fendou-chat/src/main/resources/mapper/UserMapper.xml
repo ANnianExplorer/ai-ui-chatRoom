@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.mapper.UserMapper">
+
+    <select id="selectUserFriends" resultType="com.chat.domain.pojo.User">
+        SELECT cu.*,
+               cuf.remark,
+               COUNT(cm.id) AS unreadCount
+        FROM chat_user cu
+                 INNER JOIN chat_user_friend cuf ON cu.id = cuf.friend_id and cuf.is_deleted = 0
+                 LEFT JOIN chat_message cm ON cm.chat_id =
+                                              CASE
+                                                  WHEN #{user.userId} &lt; cu.id THEN
+                                                      CONCAT('user-', #{user.userId}, '-', cu.id)
+                                                  ELSE CONCAT('user-', cu.id, '-', #{user.userId})
+                                                  END
+            AND cm.send_id != #{user.userId}
+            AND cm.is_read = 0
+            AND cm.is_deleted = 0
+        WHERE cuf.user_id = #{user.userId}
+          AND cu.is_deleted = 0
+        GROUP BY cu.id,cuf.remark
+    </select>
+
+    <select id="selectUsersByGroupId" resultType="com.chat.domain.pojo.User">
+        SELECT cu.*
+        FROM chat_user cu
+                 JOIN chat_group_member cgm ON cu.id = cgm.user_id and cgm.is_deleted = 0
+        WHERE cgm.group_id = #{groupId} and cu.is_deleted = 0
+    </select>
+</mapper>

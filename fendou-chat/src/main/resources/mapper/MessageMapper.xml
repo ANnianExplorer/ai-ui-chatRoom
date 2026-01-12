@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.mapper.MessageMapper">
+
+    <select id="selectMessagesByChatId" resultType="com.chat.domain.pojo.Message">
+        SELECT cm.*,
+               CASE WHEN cm.send_id = 0 THEN 'https://img2.baidu.com/it/u=2473380155,1807338550&amp;fm=253&amp;fmt=auto&amp;app=138&amp;f=JPEG?w=500&amp;h=500' ELSE cu.avatar END as chat_avatar,
+               CASE WHEN cm.send_id = 0 THEN 'AI聊天' ELSE cu.real_name END as real_name,
+               cf.original_name as file_name,
+               cf.file_size,
+               cf.file_type
+        FROM chat_message cm
+                 LEFT JOIN chat_user cu ON cm.send_id = cu.id and cu.is_deleted = 0
+                 LEFT JOIN chat_file cf ON cm.file_id = cf.id and cf.is_deleted = 0
+        WHERE cm.chat_id = #{chatId}
+          and cm.is_deleted = 0
+        ORDER BY cm.create_time desc
+    </select>
+</mapper>
