@@ -148,6 +148,38 @@ export function useAdminApi() {
     },
     
     // 系统设置API
+    // 统计数据API
+    statistics: {
+      getOverview() {
+        return request({ url: '/admin/statistics/overview', method: 'get' })
+      },
+      getRegisterTrend() {
+        return request({ url: '/admin/statistics/register-trend', method: 'get' })
+      },
+      getMessageTrend() {
+        return request({ url: '/admin/statistics/message-trend', method: 'get' })
+      },
+      getHourlyHeatmap() {
+        return request({ url: '/admin/statistics/hourly-heatmap', method: 'get' })
+      },
+      getUserActivity() {
+        return request({ url: '/admin/statistics/user-activity', method: 'get' })
+      }
+    },
+
+    // 系统操作API
+    actions: {
+      banUser(userId, banned) {
+        return request({ url: `/admin/actions/ban/${userId}`, method: 'post', data: { banned } })
+      },
+      muteUser(userId, groupId, muted, duration) {
+        return request({ url: '/admin/actions/mute', method: 'post', data: { userId, groupId, muted, duration } })
+      },
+      sendAnnouncement(title, content) {
+        return request({ url: '/admin/actions/announce', method: 'post', data: { title, content } })
+      }
+    },
+
     settings: {
       // 获取系统设置
       getSettings() {

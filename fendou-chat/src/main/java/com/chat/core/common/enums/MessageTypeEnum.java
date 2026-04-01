@@ -46,7 +46,34 @@ public enum MessageTypeEnum {
     REQUEST_GROUP_ONLINE_COUNT,
 
     // 群消息
-    GROUP;
+    GROUP,
+
+    // 消息撤回
+    RECALL,
+
+    // 正在输入
+    TYPING,
+
+    // 投票消息
+    VOTE,
+
+    // 投票操作
+    VOTE_ACTION,
+
+    // 位置消息
+    LOCATION,
+
+    // 系统公告
+    SYSTEM_NOTICE,
+
+    // 禁言通知
+    MUTE_NOTICE,
+
+    // 已读回执
+    READ_RECEIPT,
+
+    // 定时消息
+    SCHEDULED;
 
 
     /**

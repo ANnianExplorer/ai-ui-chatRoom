@@ -42,4 +42,19 @@ public interface UserService extends IService<User> {
 
 
     Integer verifyFriend(Integer userId, Integer friendId);
+
+    /**
+     * 检查用户是否被群禁言
+     */
+    boolean isUserMuted(Integer userId, Integer groupId);
+
+    /**
+     * 设置用户禁言状态
+     */
+    boolean setUserMute(Integer userId, Integer groupId, boolean muted, Integer durationMinutes);
+
+    /**
+     * 封禁/解封用户账号
+     */
+    boolean banUser(Integer userId, boolean banned);
 }

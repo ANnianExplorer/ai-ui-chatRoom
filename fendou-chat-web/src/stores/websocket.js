@@ -65,7 +65,8 @@ export const useWebsocketStore = defineStore('websocket', {
           this.handleUserStatus(data)
         }
 
-        this.message = data
+        // 所有消息统一更新 message，触发 ChatWindow 的 watch
+        this.message = { ...data, _ts: Date.now() }
       }
 
       // 监听关闭

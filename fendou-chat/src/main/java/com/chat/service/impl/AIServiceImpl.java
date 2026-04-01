@@ -385,6 +385,130 @@ public class AIServiceImpl implements AIService {
         return messages;
     }
 
+    @Override
+    public SseEmitter summarizeChat(String chatId, Integer messageCount) {
+        // 获取最新N条消息
+        Page<Message> page = messageService.getMessagesByChatId(chatId, 1, messageCount);
+        List<Message> messages = page.getRecords();
+
+        StringBuilder chatHistory = new StringBuilder("以下是群聊消息记录，请用简洁的中文生成摘要，突出重要信息和讨论结论：\n\n");
+        for (Message msg : messages) {
+            if (msg.getContentType() != null && msg.getContentType().equals("text") && msg.getContent() != null) {
+                chatHistory.append("[用户").append(msg.getSendId()).append("]: ").append(msg.getContent()).append("\n");
+            }
+        }
+
+        String uid = UUID.randomUUID().toString();
+        SseEmitter emitter = createSseEmitter(uid);
+
+        final String prompt = chatHistory.toString();
+        CompletableFuture.runAsync(() -> {
+            try {
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("model", AIModelConstants.MODEL);
+                List<Map<String, String>> msgs = new ArrayList<>();
+                Map<String, String> userMsg = new HashMap<>();
+                userMsg.put("role", "user");
+                userMsg.put("content", prompt);
+                msgs.add(userMsg);
+                requestBody.put("messages", msgs);
+                requestBody.put("stream", true);
+                requestBody.put("thinking", Map.of("type", "disabled"));
+                StringBuilder content = new StringBuilder();
+                sendAiRequest(emitter, requestBody, content);
+                emitter.send(SseEmitter.event().data(DONE_MARK));
+                emitter.complete();
+            } catch (Exception e) {
+                handleError(emitter, e);
+            } finally {
+                SSE_EMITTERS.remove(uid);
+            }
+        });
+        return emitter;
+    }
+
+    @Override
+    public List<String> suggestReplies(String chatId, String lastMessage) {
+        String prompt = "根据以下聊天消息，生成3条简短自然的中文回复建议，每条回复一行，不要编号：\n" + lastMessage;
+        try {
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", AIModelConstants.MODEL);
+            List<Map<String, String>> msgs = new ArrayList<>();
+            Map<String, String> userMsg = new HashMap<>();
+            userMsg.put("role", "user");
+            userMsg.put("content", prompt);
+            msgs.add(userMsg);
+            requestBody.put("messages", msgs);
+            requestBody.put("stream", false);
+            requestBody.put("thinking", Map.of("type", "disabled"));
+
+            Request request = new Request.Builder()
+                    .url(AIModelConstants.API_URL)
+                    .addHeader("Authorization", "Bearer " + AIModelConstants.API_KEY)
+                    .post(RequestBody.create(JSONUtil.toJsonStr(requestBody), MediaType.get("application/json")))
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseStr = response.body().string();
+                    cn.hutool.json.JSONObject jsonObj = JSONUtil.parseObj(responseStr);
+                    String content = jsonObj.getByPath("choices[0].message.content", String.class);
+                    if (content != null) {
+                        String[] lines = content.split("\n");
+                        List<String> suggestions = new ArrayList<>();
+                        for (String line : lines) {
+                            String trimmed = line.trim();
+                            if (!trimmed.isEmpty()) {
+                                suggestions.add(trimmed);
+                            }
+                            if (suggestions.size() >= 3) break;
+                        }
+                        return suggestions;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("AI建议回复生成失败", e);
+        }
+        return List.of("好的", "明白了", "收到！");
+    }
+
+    @Override
+    public boolean auditMessage(String content) {
+        if (content == null || content.trim().isEmpty()) return false;
+        try {
+            String prompt = "请判断以下消息是否包含违规内容（色情、暴力、政治敏感、辱骂等），只回答"违规"或"正常"：\n" + content;
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", AIModelConstants.MODEL);
+            List<Map<String, String>> msgs = new ArrayList<>();
+            Map<String, String> userMsg = new HashMap<>();
+            userMsg.put("role", "user");
+            userMsg.put("content", prompt);
+            msgs.add(userMsg);
+            requestBody.put("messages", msgs);
+            requestBody.put("stream", false);
+            requestBody.put("thinking", Map.of("type", "disabled"));
+
+            Request request = new Request.Builder()
+                    .url(AIModelConstants.API_URL)
+                    .addHeader("Authorization", "Bearer " + AIModelConstants.API_KEY)
+                    .post(RequestBody.create(JSONUtil.toJsonStr(requestBody), MediaType.get("application/json")))
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseStr = response.body().string();
+                    cn.hutool.json.JSONObject jsonObj = JSONUtil.parseObj(responseStr);
+                    String result = jsonObj.getByPath("choices[0].message.content", String.class);
+                    return result != null && result.contains("违规");
+                }
+            }
+        } catch (Exception e) {
+            log.error("AI消息审核失败", e);
+        }
+        return false;
+    }
+
     private void handleError(SseEmitter emitter, Exception e) {
         String detailedErrorMessage = ERROR_MESSAGE;
         // 添加更详细的错误信息

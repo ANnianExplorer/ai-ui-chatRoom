@@ -41,13 +41,16 @@ const routes = [
   {
     path: '/admin',
     name: 'Admin',
-    redirect: '/admin/users',
+    redirect: '/admin/dashboard',
     component: () => import('@/views/admin/AdminLayout.vue'),
     children: [
+      { path: 'dashboard', component: () => import('@/views/admin/AdminDashboard.vue'), name: 'AdminDashboard' },
       { path: 'users', component: () => import('@/views/admin/UserManagement.vue'), name: 'UserManagement' },
       { path: 'groups', component: () => import('@/views/admin/GroupManagement.vue'), name: 'GroupManagement' },
       { path: 'messages', component: () => import('@/views/admin/MessageManagement.vue'), name: 'MessageManagement' },
       { path: 'files', component: () => import('@/views/admin/FileManagement.vue'), name: 'FileManagement' },
+      { path: 'announcement', component: () => import('@/views/admin/AdminAnnouncement.vue'), name: 'AdminAnnouncement' },
+      { path: 'violation', component: () => import('@/views/admin/AdminViolation.vue'), name: 'AdminViolation' },
       { path: 'settings', component: () => import('@/views/admin/SystemSettings.vue'), name: 'SystemSettings' },
       { path: 'about', component: () => import('@/views/admin/SystemAbout.vue'), name: 'SystemAbout' }
     ]

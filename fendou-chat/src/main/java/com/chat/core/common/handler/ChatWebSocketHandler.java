@@ -140,21 +140,35 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
             // 处理请求类型消息
             if (MessageTypeEnum.isType(messageType, MessageTypeEnum.REQUEST_USER_STATUS)) {
                 log.info("收到用户状态请求");
-                // 查找当前用户ID
                 Integer currentUserId = findUserIdByChannel(ctx.channel());
                 if (currentUserId != null) {
-                    // 重新初始化用户好友状态
                     initUserFriendStatus(currentUserId, ctx);
                 }
                 return;
             } else if (MessageTypeEnum.isType(messageType, MessageTypeEnum.REQUEST_GROUP_ONLINE_COUNT)) {
                 log.info("收到群聊在线人数请求");
-                // 查找当前用户ID
                 Integer currentUserId = findUserIdByChannel(ctx.channel());
                 if (currentUserId != null) {
-                    // 重新初始化用户到群聊组
                     initUserToGroup(currentUserId, ctx);
                 }
+                return;
+            }
+
+            // 处理正在输入消息（不保存，直接转发）
+            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.TYPING.name())) {
+                handleTypingMessage(jsonMessage);
+                return;
+            }
+
+            // 处理消息撤回
+            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.RECALL.name())) {
+                handleRecallMessage(jsonMessage);
+                return;
+            }
+
+            // 处理系统公告广播
+            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.SYSTEM_NOTICE.name())) {
+                broadcastSystemNotice(jsonMessage);
                 return;
             }
             
@@ -187,13 +201,21 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
                 // 检查群聊状态
                 Group group = groupService.getById(receiverId);
                 if (group == null || group.getStatus() == 0) {
-                    // 群聊不存在或已被禁用，拒绝发送消息
                     sendToUser(message.getSendId(), MessageTypeEnum.ERROR, "该群聊已被禁用，无法发送消息！");
                     return;
                 }
 
+                // 检查用户禁言状态
+                if (userService.isUserMuted(message.getSendId(), receiverId)) {
+                    sendToUser(message.getSendId(), MessageTypeEnum.ERROR, "您已被群主禁言，无法发送消息！");
+                    return;
+                }
+
                 // 推送群聊信息
-                groupMap.get(receiverId).writeAndFlush(new TextWebSocketFrame(JSONObject.toJSONString(message)));
+                ChannelGroup groupChannels = groupMap.get(receiverId);
+                if (groupChannels != null) {
+                    groupChannels.writeAndFlush(new TextWebSocketFrame(JSONObject.toJSONString(message)));
+                }
             }
 
             // 处理好友消息
@@ -217,7 +239,6 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
                 ChannelId channelId = userMap.get(receiverId);
 
                 if (channelId != null) {
-                    // 获取对应的channel
                     Channel ct = channelGroup.find(channelId);
                     if (ct != null) {
                         log.info("好友消息: {}", message);
@@ -226,8 +247,10 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
                 }
             }
 
-            // 保存消息
-            messageService.save(message);
+            // 保存消息（定时消息除外）
+            if (message.getScheduledTime() == null || message.getScheduledTime().isEmpty()) {
+                messageService.save(message);
+            }
         }
         super.channelRead(ctx, msg);
     }
@@ -383,5 +406,100 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
             }, 500, TimeUnit.MILLISECONDS); // 延迟 500ms 再发送
         });
 
+    }
+
+    /**
+     * 处理正在输入消息（直接转发，不保存）
+     */
+    private void handleTypingMessage(JSONObject jsonMessage) {
+        String chatId = jsonMessage.getString("chatId");
+        Integer sendId = jsonMessage.getInteger("sendId");
+        if (chatId == null || sendId == null) return;
+
+        if (chatId.contains("group")) {
+            int groupId = Integer.parseInt(chatId.substring(chatId.lastIndexOf("-") + 1));
+            ChannelGroup groupChannels = groupMap.get(groupId);
+            if (groupChannels != null) {
+                String jsonStr = jsonMessage.toJSONString();
+                groupChannels.forEach(channel -> {
+                    ChannelId cid = userMap.get(sendId);
+                    if (cid == null || !cid.equals(channel.id())) {
+                        channel.writeAndFlush(new TextWebSocketFrame(jsonStr));
+                    }
+                });
+            }
+        } else {
+            String[] parts = chatId.split("-");
+            if (parts.length >= 3) {
+                Integer user1 = Integer.parseInt(parts[1]);
+                Integer user2 = Integer.parseInt(parts[2]);
+                Integer receiverId = Objects.equals(sendId, user1) ? user2 : user1;
+                ChannelId channelId = userMap.get(receiverId);
+                if (channelId != null) {
+                    Channel ct = channelGroup.find(channelId);
+                    if (ct != null) {
+                        ct.writeAndFlush(new TextWebSocketFrame(jsonMessage.toJSONString()));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理消息撤回
+     */
+    private void handleRecallMessage(JSONObject jsonMessage) {
+        String chatId = jsonMessage.getString("chatId");
+        Integer msgId = jsonMessage.getInteger("msgId");
+        Integer sendId = jsonMessage.getInteger("sendId");
+        if (chatId == null || msgId == null || sendId == null) return;
+
+        // 更新数据库消息状态
+        Message recallMsg = new Message();
+        recallMsg.setId(msgId);
+        recallMsg.setIsRecalled(1);
+        messageService.updateById(recallMsg);
+
+        String jsonStr = jsonMessage.toJSONString();
+        if (chatId.contains("group")) {
+            int groupId = Integer.parseInt(chatId.substring(chatId.lastIndexOf("-") + 1));
+            ChannelGroup groupChannels = groupMap.get(groupId);
+            if (groupChannels != null) {
+                groupChannels.writeAndFlush(new TextWebSocketFrame(jsonStr));
+            }
+        } else {
+            String[] parts = chatId.split("-");
+            if (parts.length >= 3) {
+                Integer user1 = Integer.parseInt(parts[1]);
+                Integer user2 = Integer.parseInt(parts[2]);
+                Integer receiverId = Objects.equals(sendId, user1) ? user2 : user1;
+                ChannelId channelId = userMap.get(receiverId);
+                if (channelId != null) {
+                    Channel ct = channelGroup.find(channelId);
+                    if (ct != null) ct.writeAndFlush(new TextWebSocketFrame(jsonStr));
+                }
+                // 同时发给自己（其他设备）
+                ChannelId selfChannelId = userMap.get(sendId);
+                if (selfChannelId != null) {
+                    Channel selfCt = channelGroup.find(selfChannelId);
+                    if (selfCt != null) selfCt.writeAndFlush(new TextWebSocketFrame(jsonStr));
+                }
+            }
+        }
+        log.info("消息撤回处理完成, msgId: {}", msgId);
+    }
+
+    /**
+     * 广播系统公告给所有在线用户
+     */
+    public static void broadcastSystemNotice(JSONObject noticeData) {
+        noticeData.put("type", MessageTypeEnum.SYSTEM_NOTICE.name());
+        noticeData.put("timestamp", System.currentTimeMillis());
+        String jsonStr = noticeData.toJSONString();
+        channelGroup.forEach(channel -> {
+            if (channel.isActive()) {
+                channel.writeAndFlush(new TextWebSocketFrame(jsonStr));
+            }
+        });
     }
 }

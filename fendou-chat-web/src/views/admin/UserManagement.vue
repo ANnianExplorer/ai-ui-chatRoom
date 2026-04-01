@@ -73,24 +73,27 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="scope">
-            <el-button
-              type="primary"
-              size="small"
-              @click="handleViewUser(scope.row)"
-              icon="View"
-            >
-              查看
-            </el-button>
+            <el-button type="primary" size="small" @click="handleViewUser(scope.row)" icon="View">查看</el-button>
             <el-button
               :type="scope.row.status === 1 ? 'danger' : 'success'"
               size="small"
-              @click="handleToggleStatus(scope.row)"
-              :icon="scope.row.status === 1 ? 'Delete' : 'Check'"
+              @click="handleBanUser(scope.row)"
+              :icon="scope.row.status === 1 ? 'Lock' : 'Unlock'"
             >
-              {{ scope.row.status === 1 ? '禁用' : '启用' }}
+              {{ scope.row.status === 1 ? '封禁' : '解封' }}
             </el-button>
+            <el-dropdown size="small" @command="(cmd) => handleUserAction(cmd, scope.row)" style="margin-left:4px">
+              <el-button size="small">更多<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="mute">🔇 群禁言</el-dropdown-item>
+                  <el-dropdown-item command="unmute">🔊 解除禁言</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided style="color:#f56c6c">🗑️ 删除用户</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -147,6 +150,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAdminApi } from '@/api/admin'
+import request from '@/utils/request.js'
 
 // 初始化API
 const adminApi = useAdminApi()
@@ -261,6 +265,65 @@ const handleViewUser = async (user) => {
   } catch (error) {
     console.error('获取用户详情失败:', error)
     ElMessage.error('获取用户详情失败，请稍后重试')
+  }
+}
+
+// 封禁/解封用户（使用新接口）
+const handleBanUser = async (user) => {
+  const toBan = user.status === 1
+  const actionText = toBan ? '封禁' : '解封'
+  try {
+    await ElMessageBox.confirm(`确定要${actionText}用户 ${user.username} 吗？${toBan ? '封禁后用户将被强制下线。' : ''}`, '操作确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    const res = await request({
+      url: `/admin/actions/ban/${user.id}`,
+      method: 'post',
+      data: { banned: toBan }
+    })
+    if (res.code === 200) {
+      ElMessage.success(`${actionText}成功`)
+      fetchUsers()
+    }
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(`${actionText}失败`)
+  }
+}
+
+// 用户更多操作（群禁言等）
+const handleUserAction = async (cmd, user) => {
+  if (cmd === 'mute') {
+    const { value: duration } = await ElMessageBox.prompt(
+      `对用户 ${user.username} 设置禁言时长（分钟，默认60分钟）`,
+      '群禁言',
+      { inputValue: '60', inputPattern: /^\d+$/, inputErrorMessage: '请输入数字' }
+    ).catch(() => ({ value: null }))
+    if (!duration) return
+    // 需要选择群组，这里简化为全局禁言（groupId=0）
+    const res = await request({
+      url: '/admin/actions/mute',
+      method: 'post',
+      data: { userId: user.id, groupId: 0, muted: true, duration: parseInt(duration) }
+    })
+    if (res.code === 200) ElMessage.success(`已禁言 ${duration} 分钟`)
+  } else if (cmd === 'unmute') {
+    const res = await request({
+      url: '/admin/actions/mute',
+      method: 'post',
+      data: { userId: user.id, groupId: 0, muted: false }
+    })
+    if (res.code === 200) ElMessage.success('已解除禁言')
+  } else if (cmd === 'delete') {
+    try {
+      await ElMessageBox.confirm(`确定删除用户 ${user.username}？此操作不可恢复！`, '危险操作', { type: 'error', confirmButtonText: '确认删除' })
+      const res = await adminApi.users.deleteUser(user.id)
+      if (res.code === 200) {
+        ElMessage.success('用户已删除')
+        fetchUsers()
+      }
+    } catch {}
   }
 }
 

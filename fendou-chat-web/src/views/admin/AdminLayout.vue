@@ -89,6 +89,28 @@
             </el-menu-item>
           </el-sub-menu>
 
+          <!-- 数据大屏 -->
+          <el-menu-item index="/admin/dashboard">
+            <el-icon class="menu-icon"><DataAnalysis /></el-icon>
+            <span class="menu-text">数据大屏</span>
+          </el-menu-item>
+
+          <!-- 系统运营 -->
+          <el-sub-menu index="operation">
+            <template #title>
+              <el-icon class="menu-icon"><Monitor /></el-icon>
+              <span class="menu-text">系统运营</span>
+            </template>
+            <el-menu-item index="/admin/announcement">
+              <el-icon class="menu-icon"><Bell /></el-icon>
+              <span class="menu-text">公告推送</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/violation">
+              <el-icon class="menu-icon"><Warning /></el-icon>
+              <span class="menu-text">违规监控</span>
+            </el-menu-item>
+          </el-sub-menu>
+
           <!-- 系统设置 -->
           <el-sub-menu index="system-settings">
             <template #title>

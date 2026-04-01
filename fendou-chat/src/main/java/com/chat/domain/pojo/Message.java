@@ -21,6 +21,12 @@ public class Message extends BasePOJO {
     private Integer sendId;
     private Integer fileId;
     private Integer isRead;
+    // 是否已撤回：0-否，1-是
+    private Integer isRecalled;
+    // 定时发送时间（为null则立即发送）
+    private String scheduledTime;
+    // 消息回复的原消息ID
+    private Integer replyMsgId;
 
     @TableField(exist = false)
     private String chatAvatar;
@@ -36,4 +42,7 @@ public class Message extends BasePOJO {
 
     @TableField(exist = false)
     private String fileType;
+
+    @TableField(exist = false)
+    private String replyContent;
 }

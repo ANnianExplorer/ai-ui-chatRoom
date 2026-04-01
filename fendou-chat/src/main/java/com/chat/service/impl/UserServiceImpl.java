@@ -22,6 +22,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author y
@@ -109,5 +110,34 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         u.setPassword(DigestUtil.md5Hex(userPasswordDTO.getNewPwd() + salt));
 
         return super.updateById(u);
+    }
+
+    @Override
+    public boolean isUserMuted(Integer userId, Integer groupId) {
+        String key = "mute:" + groupId + ":" + userId;
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    @Override
+    public boolean setUserMute(Integer userId, Integer groupId, boolean muted, Integer durationMinutes) {
+        String key = "mute:" + groupId + ":" + userId;
+        if (muted) {
+            if (durationMinutes != null && durationMinutes > 0) {
+                redisTemplate.opsForValue().set(key, "1", durationMinutes, TimeUnit.MINUTES);
+            } else {
+                redisTemplate.opsForValue().set(key, "1", 24 * 60, TimeUnit.MINUTES);
+            }
+        } else {
+            redisTemplate.delete(key);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean banUser(Integer userId, boolean banned) {
+        User user = new User();
+        user.setId(userId);
+        user.setStatus(banned ? 0 : 1);
+        return super.updateById(user);
     }
 }
