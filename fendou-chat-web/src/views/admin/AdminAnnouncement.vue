@@ -114,17 +114,10 @@ const sendAnnouncement = async () => {
       data: { title: form.title, content: form.content }
     })
     if (res.code === 200) {
-      const timeStr = new Date().toLocaleString('zh-CN')
-      lastSent.value = timeStr
-      history.value.unshift({
-        title: form.title || '系统公告',
-        content: form.content,
-        time: timeStr,
-        onlineCount: '若干'
-      })
       ElMessage.success('公告推送成功！')
       form.title = ''
       form.content = ''
+      loadHistory()
     }
   } catch {
     ElMessage.error('推送失败')
@@ -132,6 +125,33 @@ const sendAnnouncement = async () => {
     sending.value = false
   }
 }
+
+const loadHistory = async () => {
+  try {
+    const res = await request({
+      url: '/admin/actions/announcements',
+      method: 'get',
+      params: { page: 1, pageSize: 20 }
+    })
+    if (res.code === 200 && res.data && res.data.records) {
+      history.value = res.data.records.map(item => ({
+        title: item.title || '系统公告',
+        content: item.content,
+        time: item.createTime,
+        onlineCount: item.onlineCount || 0
+      }))
+      if (history.value.length > 0) {
+        lastSent.value = history.value[0].time
+      }
+    }
+  } catch (e) {
+    console.error('加载历史失败:', e)
+  }
+}
+
+onMounted(() => {
+  loadHistory()
+})
 </script>
 
 <style scoped>

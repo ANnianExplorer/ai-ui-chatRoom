@@ -34,4 +34,9 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
         return super.update(message, lqw);
     }
+
+    @Override
+    public Boolean savePrivateMessage(Message message, Integer senderId, Integer receiverId) {
+        return super.save(message);
+    }
 }

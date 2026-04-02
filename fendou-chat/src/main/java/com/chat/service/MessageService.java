@@ -14,4 +14,6 @@ public interface MessageService extends IService<Message> {
 
 
     Boolean updateReadStatus(String chatId, Integer userId);
+
+    Boolean savePrivateMessage(Message message, Integer senderId, Integer receiverId);
 }

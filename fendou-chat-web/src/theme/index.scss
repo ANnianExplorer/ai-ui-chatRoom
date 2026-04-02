@@ -1,5 +1,6 @@
 @use './app.scss';
 @use './dark.scss';
+@use './global.scss';
 /* 暗色主题样式会根据html.dark类自动应用，我们通过控制该类的添加来管理暗色主题范围 */
 @import 'element-plus/dist/index.css';
 @import 'element-plus/theme-chalk/dark/css-vars.css';

@@ -1,6 +1,5 @@
 package com.chat.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.chat.domain.pojo.Vote;
 import com.chat.domain.pojo.VoteOption;
 import com.chat.domain.pojo.VoteRecord;
@@ -77,18 +76,21 @@ public class VoteServiceImpl implements VoteService {
         Vote vote = voteMapper.selectById(voteId);
         if (vote == null) throw new RuntimeException("投票不存在");
 
-        // 检查是否已投票
+        // 去重 optionIds（防止前端传入重复ID导致唯一索引冲突）
+        List<Integer> uniqueOptionIds = optionIds.stream().distinct().toList();
+
+        // 检查是否已投票，如果有则先减票数
         List<VoteRecord> existingRecords = voteRecordMapper.selectByVoteAndUser(voteId, userId);
         if (!existingRecords.isEmpty()) {
-            // 取消已有选项
             for (VoteRecord record : existingRecords) {
-                voteRecordMapper.deleteById(record.getId());
                 voteOptionMapper.decrementVoteCount(record.getOptionId());
             }
+            // 物理删除旧记录（避免逻辑删除导致唯一索引冲突）
+            voteRecordMapper.physicalDeleteByVoteAndUser(voteId, userId);
         }
 
         // 记录新投票
-        for (Integer optionId : optionIds) {
+        for (Integer optionId : uniqueOptionIds) {
             VoteRecord record = new VoteRecord();
             record.setVoteId(voteId);
             record.setOptionId(optionId);

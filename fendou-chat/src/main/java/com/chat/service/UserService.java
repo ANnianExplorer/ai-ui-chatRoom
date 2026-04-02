@@ -7,7 +7,10 @@ import com.chat.domain.dto.user.UserPasswordDTO;
 import com.chat.domain.dto.user.UserProfileDTO;
 import com.chat.domain.dto.user.UserQueryDTO;
 import com.chat.domain.pojo.User;
+import org.springframework.stereotype.Service;
 
+import java.lang.reflect.GenericDeclaration;
+import java.lang.reflect.TypeVariable;
 import java.util.List;
 
 /**
@@ -57,4 +60,6 @@ public interface UserService extends IService<User> {
      * 封禁/解封用户账号
      */
     boolean banUser(Integer userId, boolean banned);
+
+    User getUserById(Integer friendId);
 }

@@ -10,3 +10,7 @@ node_modules
 .vite
 dist
 *-lock.*
+
+.cursor
+.trae
+docs

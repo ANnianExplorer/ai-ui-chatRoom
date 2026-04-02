@@ -1,61 +1,67 @@
 <template>
-  <div class="chat-container qq-style">
-    <!-- QQ风格两栏布局 -->
-    <div class="qq-layout">
-      <!-- 中间聊天列表 -->
-      <div class="qq-chat-list">
-        <!-- 搜索栏 -->
-        <div class="list-header">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索消息、群聊、联系人"
-            prefix-icon="Search"
-            clearable
-            size="small"
-            class="search-input"
-          />
-          <div style="display: flex; gap: 8px;">
-            <el-dropdown placement="bottom" trigger="click">
-              <el-button type="primary" round size="small" class="add-btn">
-                <el-icon><Plus /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="handleAddUser">添加好友</el-dropdown-item>
-                  <el-dropdown-item @click="handleAddGroup">创建群聊</el-dropdown-item>
-                  <el-dropdown-item @click="handleJoinGroup">加入群聊</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+  <div class="chat-page">
+    <div class="chat-layout">
+      <!-- 左侧会话列表 -->
+      <div class="chat-panel">
+        <!-- 面板头部 -->
+        <div class="panel-header">
+          <div class="panel-title">消息</div>
+          <el-dropdown placement="bottom-end" trigger="click">
+            <button class="icon-btn" title="新建会话">
+              <svg viewBox="0 0 24 24" fill="none" class="btn-svg">
+                <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <template #dropdown>
+              <el-dropdown-menu class="panel-dropdown">
+                <el-dropdown-item @click="handleAddUser">添加好友</el-dropdown-item>
+                <el-dropdown-item @click="handleAddGroup">创建群聊</el-dropdown-item>
+                <el-dropdown-item @click="handleJoinGroup">加入群聊</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="search-wrap">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" class="search-icon">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+              <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input
+              v-model="searchKeyword"
+              placeholder="搜索消息、群聊、联系人"
+              class="search-input"
+            />
           </div>
         </div>
 
-
-        <!-- 聊天列表 -->
-        <div style="flex: 1; overflow: hidden;">
-          <ChatList 
-            ref="chatListRef" 
-            @getChat="getChat" 
+        <!-- 会话列表 -->
+        <div class="list-body">
+          <ChatList
+            ref="chatListRef"
+            @getChat="getChat"
             :search-keyword="searchKeyword"
           />
         </div>
       </div>
 
-      <!-- 右侧聊天区域 -->
-      <div class="qq-chat-window">
-        <!-- 聊天窗口 -->
+      <!-- 右侧聊天窗口 -->
+      <div class="chat-window-area">
         <ChatWindow :chat="chat" @show-group-member="showGroupMember" />
       </div>
 
       <!-- 群成员侧边栏 -->
-    <GroupMemberSidebar
-      :show="showMemberList"
-      :chat="chat"
-      @update:show="showMemberList = $event"
-    />
+      <GroupMemberSidebar
+        :show="showMemberList"
+        :chat="chat"
+        @update:show="showMemberList = $event"
+      />
     </div>
-    
-    <!-- 对话框组件 -->
+
+    <!-- 对话框 -->
     <AddFriendDialog ref="addFriendDialogRef" />
     <AddGroupDialog ref="addGroupDialogRef" />
     <JoinGroupDialog ref="joinGroupDialogRef" />
@@ -84,7 +90,7 @@ import { useChatApi } from '@/api/chat/index.js'
 import { useGroupApi } from '@/api/group/index.js'
 import { useUserApi } from '@/api/user/index.js'
 import { useUserStore } from '@/stores/user.js'
-import '@/theme/chat.scss'
+// import '@/theme/chat.scss'
 
 // 异步导入对话框组件
 const AddFriendDialog = defineAsyncComponent(() => import('@/views/contact/component/AddFriend.vue'))
@@ -174,3 +180,150 @@ onMounted(() => {
   fetchChatList()
 })
 </script>
+
+<style lang="scss" scoped>
+.chat-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.chat-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow-lg);
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+
+/* 左侧面板 */
+.chat-panel {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--chat-list-bg);
+  backdrop-filter: blur(20px);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 10px;
+  flex-shrink: 0;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-primary-subtle-2);
+    transform: scale(1.05);
+  }
+}
+
+.btn-svg { width: 16px; height: 16px; }
+
+/* 搜索框 */
+.search-wrap {
+  padding: 0 10px 10px;
+  flex-shrink: 0;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+
+  &:focus-within {
+    border-color: var(--input-focus-border);
+    box-shadow: var(--input-focus-shadow);
+  }
+}
+
+.search-icon {
+  width: 15px; height: 15px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+
+  &::placeholder { color: var(--text-muted); }
+}
+
+.list-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 右侧窗口 */
+.chat-window-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--chat-window-bg);
+  min-width: 0;
+}
+</style>
+
+<style lang="scss">
+/* 面板下拉菜单全局覆盖 */
+.panel-dropdown {
+  border-radius: 12px !important;
+  border: 1px solid var(--border-default) !important;
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: blur(16px);
+  box-shadow: var(--glass-shadow) !important;
+  padding: 4px !important;
+
+  .el-dropdown-menu__item {
+    border-radius: 8px !important;
+    margin: 2px 0;
+    font-size: 13px;
+    color: var(--text-primary) !important;
+    transition: all 0.2s ease;
+    &:hover {
+      background: var(--color-primary-subtle) !important;
+      color: var(--color-primary) !important;
+    }
+  }
+}
+</style>

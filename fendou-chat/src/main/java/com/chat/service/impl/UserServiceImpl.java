@@ -140,4 +140,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setStatus(banned ? 0 : 1);
         return super.updateById(user);
     }
+
+    @Override
+    public User getUserById(Integer friendId) {
+        return baseMapper.selectById(friendId);
+    }
 }

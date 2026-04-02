@@ -1,0 +1,581 @@
+/* ============================================
+   FenDouChat - 全局设计系统
+   现代玻璃态 + 渐变双模式主题
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ── 亮色模式变量 ── */
+:root {
+  /* 字体 */
+  --font-sans: 'Inter', 'Space Grotesk', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* 品牌渐变 */
+  --brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --brand-gradient-2: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  --brand-gradient-3: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+
+  /* 主色调 */
+  --color-primary: #7c3aed;
+  --color-primary-light: #8b5cf6;
+  --color-primary-dark: #6d28d9;
+  --color-primary-subtle: rgba(124, 58, 237, 0.08);
+  --color-primary-subtle-2: rgba(124, 58, 237, 0.15);
+  --color-accent: #06b6d4;
+
+  /* 背景层 */
+  --bg-page: #f0f2f8;
+  --bg-base: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(255, 255, 255, 0.92);
+  --bg-subtle: #f8f9fc;
+  --bg-muted: #f1f3f9;
+
+  /* 玻璃态 */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 32px rgba(99, 102, 241, 0.12), 0 2px 8px rgba(0,0,0,0.06);
+  --glass-shadow-lg: 0 16px 48px rgba(99, 102, 241, 0.18), 0 4px 16px rgba(0,0,0,0.08);
+
+  /* 文字 */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+  --text-accent: #7c3aed;
+
+  /* 边框 */
+  --border-default: rgba(148, 163, 184, 0.25);
+  --border-subtle: rgba(148, 163, 184, 0.15);
+  --border-strong: rgba(148, 163, 184, 0.4);
+  --border-accent: rgba(124, 58, 237, 0.3);
+
+  /* 导航栏 */
+  --nav-bg: var(--brand-gradient);
+  --nav-height: 52px;
+  --nav-text: #ffffff;
+  --nav-text-muted: rgba(255, 255, 255, 0.75);
+  --nav-hover: rgba(255, 255, 255, 0.18);
+  --nav-active: rgba(255, 255, 255, 0.28);
+
+  /* 侧边栏 */
+  --sidebar-bg: rgba(255, 255, 255, 0.88);
+  --sidebar-width: 68px;
+  --sidebar-border: var(--border-subtle);
+  --sidebar-icon: #64748b;
+  --sidebar-icon-active: var(--color-primary);
+  --sidebar-item-hover: rgba(124, 58, 237, 0.08);
+  --sidebar-item-active: rgba(124, 58, 237, 0.15);
+
+  /* 聊天区域 */
+  --chat-list-bg: rgba(255, 255, 255, 0.75);
+  --chat-list-width: 280px;
+  --chat-item-hover: rgba(124, 58, 237, 0.07);
+  --chat-item-active: rgba(124, 58, 237, 0.13);
+  --chat-window-bg: linear-gradient(160deg, #f0f4ff 0%, #f8f0ff 50%, #f0f8ff 100%);
+  --chat-header-bg: rgba(255, 255, 255, 0.82);
+  --chat-input-bg: rgba(255, 255, 255, 0.9);
+
+  /* 消息气泡 */
+  --bubble-left-bg: rgba(255, 255, 255, 0.92);
+  --bubble-left-text: #1e293b;
+  --bubble-left-border: rgba(148, 163, 184, 0.2);
+  --bubble-right-bg: linear-gradient(135deg, #7c3aed, #9333ea);
+  --bubble-right-text: #ffffff;
+
+  /* 卡片 */
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(255, 255, 255, 0.7);
+  --card-shadow: 0 4px 20px rgba(99, 102, 241, 0.1), 0 1px 4px rgba(0,0,0,0.05);
+  --card-shadow-hover: 0 8px 32px rgba(99, 102, 241, 0.18), 0 2px 8px rgba(0,0,0,0.08);
+  --card-radius: 16px;
+
+  /* 输入框 */
+  --input-bg: rgba(248, 250, 252, 0.9);
+  --input-border: rgba(148, 163, 184, 0.3);
+  --input-focus-border: var(--color-primary);
+  --input-focus-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+
+  /* 状态色 */
+  --color-online: #10b981;
+  --color-offline: #94a3b8;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+
+  /* 过渡 */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.25s ease;
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* 背景装饰 */
+  --page-bg-gradient: linear-gradient(135deg, #f0f4ff 0%, #faf0ff 50%, #f0f8ff 100%);
+}
+
+/* ── 暗色模式变量 ── */
+html.dark {
+  /* 背景层 */
+  --bg-page: #0a0d1a;
+  --bg-base: #111827;
+  --bg-elevated: #1a2235;
+  --bg-overlay: rgba(17, 24, 39, 0.95);
+  --bg-subtle: #151f2e;
+  --bg-muted: #1e2d42;
+
+  /* 玻璃态 */
+  --glass-bg: rgba(17, 24, 39, 0.75);
+  --glass-bg-strong: rgba(17, 24, 39, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0,0,0,0.3);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0,0,0,0.35);
+
+  /* 文字 */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --text-inverse: #0f172a;
+  --text-accent: #a78bfa;
+
+  /* 边框 */
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-accent: rgba(167, 139, 250, 0.3);
+
+  /* 导航栏 */
+  --nav-bg: linear-gradient(135deg, #1a1f3a 0%, #0f172a 100%);
+  --nav-text: #f1f5f9;
+  --nav-text-muted: rgba(241, 245, 249, 0.6);
+  --nav-hover: rgba(255, 255, 255, 0.08);
+  --nav-active: rgba(167, 139, 250, 0.2);
+
+  /* 侧边栏 */
+  --sidebar-bg: rgba(17, 24, 39, 0.85);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-icon: #64748b;
+  --sidebar-icon-active: #a78bfa;
+  --sidebar-item-hover: rgba(167, 139, 250, 0.1);
+  --sidebar-item-active: rgba(167, 139, 250, 0.18);
+
+  /* 聊天区域 */
+  --chat-list-bg: rgba(17, 24, 39, 0.8);
+  --chat-item-hover: rgba(167, 139, 250, 0.08);
+  --chat-item-active: rgba(167, 139, 250, 0.15);
+  --chat-window-bg: linear-gradient(160deg, #0a0d1a 0%, #0f0f23 50%, #0a1020 100%);
+  --chat-header-bg: rgba(17, 24, 39, 0.85);
+  --chat-input-bg: rgba(17, 24, 39, 0.9);
+
+  /* 消息气泡 */
+  --bubble-left-bg: rgba(30, 41, 59, 0.85);
+  --bubble-left-text: #e2e8f0;
+  --bubble-left-border: rgba(255, 255, 255, 0.08);
+  --bubble-right-bg: linear-gradient(135deg, #6d28d9, #7c3aed);
+  --bubble-right-text: #ffffff;
+
+  /* 卡片 */
+  --card-bg: rgba(17, 24, 39, 0.8);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0,0,0,0.2);
+  --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0,0,0,0.3);
+
+  /* 输入框 */
+  --input-bg: rgba(30, 41, 59, 0.7);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus-border: #a78bfa;
+  --input-focus-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+
+  /* 背景装饰 */
+  --page-bg-gradient: linear-gradient(135deg, #0a0d1a 0%, #0f0a1e 50%, #0a1020 100%);
+}
+
+/* ============================================
+   全局基础样式
+   ============================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── 动画关键帧 ── */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.5); opacity: 0.6; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%           { transform: translateY(-6px); }
+}
+
+/* ── 滚动条全局样式 ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.2);
+  border-radius: 999px;
+  &:hover { background: rgba(124, 58, 237, 0.4); }
+}
+
+/* ── 玻璃卡片混入 ── */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-lg);
+}
+
+.glass-card-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+/* ── 渐变背景装饰 ── */
+.page-bg-dots {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+    top: -200px; left: -200px;
+    border-radius: 50%;
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%);
+    bottom: -150px; right: -150px;
+    border-radius: 50%;
+  }
+}
+
+/* ── 按钮基础 ── */
+.btn-primary-grad {
+  background: var(--brand-gradient-2);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.45);
+    filter: brightness(1.08);
+  }
+  &:active { transform: translateY(0); }
+}
+
+/* ── 交互式光标效果 ── */
+.cursor-glow {
+  cursor: none;
+}
+
+/* ── 标签动画 ── */
+.animate-fadein { animation: fadeInUp 0.3s ease both; }
+.animate-scalein { animation: scaleIn 0.25s ease both; }
+
+/* ══════════════════════════════════════════
+   高端科技感增强组件
+   ══════════════════════════════════════════ */
+
+/* 极光光晕背景 */
+@keyframes aurora {
+  0%   { transform: rotate(0deg) scale(1); opacity: 0.6; }
+  33%  { transform: rotate(120deg) scale(1.2); opacity: 0.8; }
+  66%  { transform: rotate(240deg) scale(0.9); opacity: 0.5; }
+  100% { transform: rotate(360deg) scale(1); opacity: 0.6; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3), 0 0 40px rgba(124, 58, 237, 0.15); }
+  50%       { box-shadow: 0 0 30px rgba(124, 58, 237, 0.5), 0 0 60px rgba(124, 58, 237, 0.25), 0 0 80px rgba(6, 182, 212, 0.1); }
+}
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(124, 58, 237, 0.3); }
+  50%       { border-color: rgba(167, 139, 250, 0.7); }
+}
+@keyframes neon-flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96%           { opacity: 0.8; }
+  97%           { opacity: 1; }
+  98%           { opacity: 0.85; }
+}
+@keyframes scan-line {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(4); opacity: 0; }
+}
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+}
+
+/* 霓虹发光边框 */
+.neon-border {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: var(--brand-gradient-3);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  &:hover::before { opacity: 1; }
+}
+
+/* 高端卡片 - 带内发光 */
+.tech-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.1);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    transition: left 0.5s;
+  }
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover), inset 0 1px 0 rgba(255,255,255,0.15);
+    border-color: var(--border-accent);
+    &::before { left: 150%; }
+  }
+}
+
+/* 渐变文字 */
+.gradient-text {
+  background: var(--brand-gradient-3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% auto;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* 科技网格背景 */
+.tech-grid-bg {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124, 58, 237, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124, 58, 237, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+}
+
+/* 发光标签/badge */
+.glow-badge {
+  background: var(--brand-gradient);
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.5), 0 0 20px rgba(124, 58, 237, 0.2);
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* 侧边指示条 - 活跃状态 */
+.active-indicator {
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 60%;
+  background: var(--brand-gradient);
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+}
+
+/* 浮动光球 */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+  will-change: transform;
+}
+.orb-primary {
+  background: rgba(124, 58, 237, 0.18);
+  animation: aurora 20s linear infinite;
+}
+.orb-accent {
+  background: rgba(6, 182, 212, 0.12);
+  animation: aurora 15s linear infinite reverse;
+}
+.orb-pink {
+  background: rgba(236, 72, 153, 0.1);
+  animation: float 8s ease-in-out infinite;
+}
+
+/* 扫描线效果 (装饰用) */
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0; width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.15), transparent);
+    animation: scan-line 8s linear infinite;
+  }
+}
+
+/* 按钮波纹效果容器 */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+  }
+}
+
+/* 高端输入框 */
+.premium-input {
+  :deep(.el-input__wrapper) {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    box-shadow: none !important;
+    border-radius: 12px !important;
+    transition: all 0.25s !important;
+    backdrop-filter: blur(8px);
+    &:hover { border-color: var(--border-strong) !important; }
+    &.is-focus {
+      border-color: var(--color-primary-light) !important;
+      box-shadow: var(--input-focus-shadow) !important;
+      background: var(--bg-elevated) !important;
+    }
+  }
+  :deep(.el-input__inner) {
+    color: var(--text-primary) !important;
+    &::placeholder { color: var(--text-muted) !important; }
+  }
+}
+
+/* 悬浮元素 */
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--card-shadow-hover);
+  }
+}
+
+/* 高亮边框过渡 */
+.glow-border-hover {
+  border: 1px solid var(--border-default);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:hover {
+    border-color: var(--border-accent);
+    box-shadow: 0 0 0 3px var(--color-primary-subtle);
+  }
+}

@@ -400,43 +400,55 @@ defineExpose({
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .qq-member-sidebar {
-  width: 280px;
-  background-color: #f5f5f5;
-  border-left: 1px solid #e0e0e0;
+  width: 240px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+  animation: slideInRight 0.3s ease both;
 }
 
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* 群公告 */
 .group-notice {
-  padding: 16px;
-  background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 14px 14px 10px;
+  background: var(--color-primary-subtle);
+  border-bottom: 1px solid var(--border-accent);
 }
 
 .notice-header h4 {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  color: #333;
-}
-
-.notice-title {
-  font-weight: bold;
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  color: #409eff;
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .notice-text {
   margin: 0;
   font-size: 12px;
-  color: #666;
-  line-height: 1.5;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
+/* 成员面板 */
 .group-member-panel {
   flex: 1;
   display: flex;
@@ -445,61 +457,77 @@ defineExpose({
 }
 
 .member-header {
-  padding: 12px 16px;
-  background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.search-box {
-  margin-top: 12px;
-}
-
-.search-box :deep(.el-input__wrapper) {
-  border-radius: 20px;
-  border-color: #e0e0e0;
-  transition: all 0.3s ease;
-}
-
-.search-box :deep(.el-input__wrapper):hover {
-  border-color: #409eff;
-}
-
-.search-box :deep(.el-input__wrapper).is-focus {
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
-  border-color: #409eff;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--glass-bg-strong);
+  flex-shrink: 0;
 }
 
 .header-top h4 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  color: #333;
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
 }
 
 .online-info {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #67c23a;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--color-online);
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 
+.search-box {
+  :deep(.el-input__wrapper) {
+    border-radius: 20px !important;
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+
+    &:hover { border-color: var(--color-primary) !important; }
+    &.is-focus {
+      border-color: var(--color-primary) !important;
+      box-shadow: var(--input-focus-shadow) !important;
+    }
+  }
+
+  :deep(.el-input__inner) {
+    color: var(--text-primary) !important;
+    font-size: 12px !important;
+    &::placeholder { color: var(--text-muted) !important; }
+  }
+}
+
+/* 成员列表 */
 .member-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 6px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124,58,237,0.15) transparent;
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.2); border-radius: 999px; }
 }
 
 .member-item {
   display: flex;
   align-items: center;
-  padding: 10px 16px;
+  padding: 8px 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  border-radius: 10px;
+  margin: 1px 6px;
   justify-content: space-between;
-}
 
-.member-item:hover {
-  background-color: #e8e8e8;
+  &:hover {
+    background: var(--chat-item-hover);
+    transform: translateX(2px);
+  }
 }
 
 .member-content {
@@ -507,22 +535,28 @@ defineExpose({
   align-items: center;
   flex: 1;
   cursor: pointer;
+  min-width: 0;
 }
 
 .member-avatar {
   position: relative;
-  margin-right: 12px;
+  margin-right: 10px;
+  flex-shrink: 0;
+
+  :deep(.el-avatar) {
+    border: 2px solid var(--border-default);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
 }
 
 .online-dot {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 10px;
-  height: 10px;
-  background-color: #67c23a;
+  bottom: 0; right: 0;
+  width: 9px; height: 9px;
+  background: var(--color-online);
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid var(--bg-base);
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.3);
 }
 
 .member-info {
@@ -531,8 +565,9 @@ defineExpose({
 }
 
 .member-name {
-  font-size: 14px;
-  color: #333;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -542,27 +577,18 @@ defineExpose({
 }
 
 .crown-icon {
-  font-size: 14px;
-  color: #fadb14;
-  margin-left: 4px;
-  vertical-align: middle;
+  font-size: 12px;
+  filter: drop-shadow(0 1px 2px rgba(245,158,11,0.5));
 }
 
 .member-role {
-  font-size: 12px;
-  color: #909399;
+  font-size: 10px;
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  padding: 1px 6px;
+  border-radius: 999px;
+  display: inline-block;
   margin-top: 2px;
-}
-
-/* 隐藏滚动条但保留滚动功能 */
-.member-list::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  opacity: 0;
-}
-
-.member-list {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  font-weight: 600;
 }
 </style>

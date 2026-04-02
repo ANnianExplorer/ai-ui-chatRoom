@@ -19,72 +19,72 @@
 
       <!-- 右侧设置内容 -->
       <div class="settings-content">
-        <!-- 主题设置 -->
-        <div v-show="activeNav === 'theme'" class="settings-section">
-          <div class="section-header">
-            <h2>主题设置</h2>
-            <p>自定义您的应用外观和体验</p>
-          </div>
-          
-          <div class="settings-card">
-            <div class="card-header">
-              <h3>外观设置</h3>
-            </div>
-            <div class="card-body">
-              <div class="settings-item">
-                <div class="item-left">
-                  <span class="item-label">系统主题色</span>
-                  <span class="item-desc">选择应用的主色调</span>
-                </div>
-                <div class="item-right">
-                  <el-color-picker 
-                    v-model="themeConfig.primary" 
-                    :predefine="predefineColors" 
-                    @change="changeThemeColor"
-                    size="large"
-                  />
-                </div>
-              </div>
-              
-              <div class="settings-item">
-                <div class="item-left">
-                  <span class="item-label">组件大小</span>
-                  <span class="item-desc">调整界面元素的尺寸</span>
-                </div>
-                <div class="item-right">
-                  <el-radio-group v-model="themeConfig.componentSize" @change="changeComponentSize">
-                    <el-radio-button value="large">大型</el-radio-button>
-                    <el-radio-button value="default">默认</el-radio-button>
-                    <el-radio-button value="small">小型</el-radio-button>
-                  </el-radio-group>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="settings-card">
-            <div class="card-header">
-              <h3>主题预设</h3>
-            </div>
-            <div class="card-body">
-              <div class="theme-presets">
-                <div 
-                  v-for="color in themePresets" 
-                  :key="color.value"
-                  class="theme-preset-item"
-                  @click="selectThemePreset(color.value)"
-                >
-                  <div class="preset-color" :style="{ background: color.gradient }"></div>
-                  <span class="preset-name">{{ color.name }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="settings-actions">
-            <el-button type="primary" icon="Refresh" @click="resetTheme">恢复默认设置</el-button>
-          </div>
-        </div>
+<!--        &lt;!&ndash; 主题设置 &ndash;&gt;-->
+<!--        <div v-show="activeNav === 'theme'" class="settings-section">-->
+<!--          <div class="section-header">-->
+<!--            <h2>主题设置</h2>-->
+<!--            <p>自定义您的应用外观和体验</p>-->
+<!--          </div>-->
+<!--          -->
+<!--          <div class="settings-card">-->
+<!--            <div class="card-header">-->
+<!--              <h3>外观设置</h3>-->
+<!--            </div>-->
+<!--            <div class="card-body">-->
+<!--              <div class="settings-item">-->
+<!--                <div class="item-left">-->
+<!--                  <span class="item-label">系统主题色</span>-->
+<!--                  <span class="item-desc">选择应用的主色调</span>-->
+<!--                </div>-->
+<!--                <div class="item-right">-->
+<!--                  <el-color-picker -->
+<!--                    v-model="themeConfig.primary" -->
+<!--                    :predefine="predefineColors" -->
+<!--                    @change="changeThemeColor"-->
+<!--                    size="large"-->
+<!--                  />-->
+<!--                </div>-->
+<!--              </div>-->
+<!--              -->
+<!--              <div class="settings-item">-->
+<!--                <div class="item-left">-->
+<!--                  <span class="item-label">组件大小</span>-->
+<!--                  <span class="item-desc">调整界面元素的尺寸</span>-->
+<!--                </div>-->
+<!--                <div class="item-right">-->
+<!--                  <el-radio-group v-model="themeConfig.componentSize" @change="changeComponentSize">-->
+<!--                    <el-radio-button value="large">大型</el-radio-button>-->
+<!--                    <el-radio-button value="default">默认</el-radio-button>-->
+<!--                    <el-radio-button value="small">小型</el-radio-button>-->
+<!--                  </el-radio-group>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          -->
+<!--          <div class="settings-card">-->
+<!--            <div class="card-header">-->
+<!--              <h3>主题预设</h3>-->
+<!--            </div>-->
+<!--            <div class="card-body">-->
+<!--              <div class="theme-presets">-->
+<!--                <div -->
+<!--                  v-for="color in themePresets" -->
+<!--                  :key="color.value"-->
+<!--                  class="theme-preset-item"-->
+<!--                  @click="selectThemePreset(color.value)"-->
+<!--                >-->
+<!--                  <div class="preset-color" :style="{ background: color.gradient }"></div>-->
+<!--                  <span class="preset-name">{{ color.name }}</span>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          -->
+<!--          <div class="settings-actions">-->
+<!--            <el-button type="primary" icon="Refresh" @click="resetTheme">恢复默认设置</el-button>-->
+<!--          </div>-->
+<!--        </div>-->
 
         <!-- 账号设置 -->
         <div v-show="activeNav === 'account'" class="settings-section">
@@ -505,7 +505,7 @@ const themePresets = [
 ]
 
 const navList = [
-  { key: 'theme', name: '主题设置', icon: Setting },
+  // { key: 'theme', name: '主题设置', icon: Setting },
   { key: 'account', name: '账号设置', icon: User },
   { key: 'notification', name: '通知设置', icon: Bell },
   { key: 'privacy', name: '隐私设置', icon: Lock },
@@ -736,136 +736,167 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .settings-container {
-  height: calc(100vh - 60px);
+  height: 100%;
   overflow: hidden;
+  padding: 10px;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
 }
 
 .settings-layout {
   display: flex;
   height: 100%;
-  background-color: #f5f5f5;
+  border-radius: 18px;
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg);
+  overflow: hidden;
 }
 
+/* ── 左侧导航 ── */
 .settings-sidebar {
-  width: 220px;
-  background-color: #fff;
-  border-right: 1px solid #e4e7ed;
+  width: 200px;
+  background: var(--chat-list-bg);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-subtle);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .settings-nav {
-  padding: 16px 0;
+  padding: 14px 8px;
 }
 
 .settings-nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 24px;
+  gap: 10px;
+  padding: 11px 16px;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #606266;
-  font-size: 14px;
-  
-  .el-icon {
-    font-size: 18px;
-  }
-  
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 12px;
+  margin: 2px 0;
+
+  .el-icon { font-size: 17px; transition: transform 0.2s; }
+
   &:hover {
-    background-color: #f5f7fa;
-    color: #409EFF;
+    background: var(--sidebar-item-hover);
+    color: var(--color-primary);
+    transform: translateX(3px);
+
+    .el-icon { transform: scale(1.1); }
   }
-  
+
   &.active {
-    background-color: #ecf5ff;
-    color: #409EFF;
-    border-right: 3px solid #409EFF;
+    background: var(--sidebar-item-active);
+    color: var(--sidebar-icon-active);
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 50%; transform: translateY(-50%);
+      width: 3px; height: 60%;
+      background: var(--brand-gradient-2);
+      border-radius: 0 4px 4px 0;
+    }
   }
 }
 
+/* ── 右侧内容 ── */
 .settings-content {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124,58,237,0.2) transparent;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.2); border-radius: 999px; }
 }
 
 .settings-section {
-  max-width: 800px;
+  max-width: 760px;
   margin: 0 auto;
+  animation: fadeInUp 0.3s ease;
 }
 
 .section-header {
-  margin-bottom: 24px;
-  
+  margin-bottom: 20px;
+
   h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #303133;
-    margin: 0 0 8px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 6px 0;
+    background: var(--brand-gradient-3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  
-  p {
-    font-size: 14px;
-    color: #909399;
-    margin: 0;
-  }
+
+  p { font-size: 13px; color: var(--text-muted); margin: 0; }
 }
 
 .settings-card {
-  background-color: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--card-shadow) !important;
+  margin-bottom: 14px;
   overflow: hidden;
+  transition: box-shadow 0.2s;
+
+  &:hover { box-shadow: var(--card-shadow-hover) !important; }
 }
 
 .card-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
-  
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+
   h3 {
-    font-size: 16px;
-    font-weight: 500;
-    color: #303133;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
     margin: 0;
+    letter-spacing: 0.02em;
   }
 }
 
-.card-body {
-  padding: 8px 0;
-}
+.card-body { padding: 4px 0; }
 
 .settings-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  transition: background-color 0.2s;
-  
-  &:hover {
-    background-color: #fafafa;
-  }
-  
-  &.clickable {
-    cursor: pointer;
-  }
+  padding: 14px 18px;
+  transition: background 0.18s;
+  border-radius: 8px;
+
+  &:hover { background: var(--color-primary-subtle); }
+  &.clickable { cursor: pointer; }
 }
 
 .item-left {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .item-label {
   font-size: 14px;
-  color: #303133;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
-.item-desc {
-  font-size: 12px;
-  color: #909399;
-}
+.item-desc { font-size: 12px; color: var(--text-muted); }
 
 .item-right {
   display: flex;
@@ -873,64 +904,51 @@ onMounted(() => {
   gap: 8px;
 }
 
-.item-value {
-  font-size: 14px;
-  color: #909399;
-}
-
-.arrow-icon {
-  color: #c0c4cc;
-  font-size: 16px;
-}
-
-.avatar-item {
-  gap: 16px;
-}
+.item-value { font-size: 13px; color: var(--text-muted); }
+.arrow-icon { color: var(--text-muted); font-size: 16px; }
+.avatar-item { gap: 16px; }
 
 .settings-actions {
-  margin-top: 24px;
+  margin-top: 20px;
   display: flex;
   justify-content: center;
 }
 
+/* 主题预设 */
 .theme-presets {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 14px;
+  padding: 14px 18px;
 }
 
 .theme-preset-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   transition: transform 0.2s;
-  
-  &:hover {
-    transform: scale(1.05);
-  }
+
+  &:hover { transform: scale(1.08) translateY(-2px); }
 }
 
 .preset-color {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: box-shadow 0.2s;
+  &:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
 }
 
-.preset-name {
-  font-size: 12px;
-  color: #606266;
-}
+.preset-name { font-size: 11px; color: var(--text-muted); }
 
-/* 表单样式 */
+/* 表单 */
 .settings-form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
 .avatar-uploader {
@@ -938,92 +956,63 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .avatar-preview {
   cursor: pointer;
-  transition: opacity 0.2s;
-  
-  &:hover {
-    opacity: 0.8;
-  }
+  transition: opacity 0.2s, transform 0.2s;
+  &:hover { opacity: 0.85; transform: scale(1.04); }
 }
 
-.avatar-hint {
-  font-size: 12px;
-  color: #909399;
-  margin: 0;
-}
+.avatar-hint { font-size: 12px; color: var(--text-muted); margin: 0; }
+.password-form { max-width: 500px; }
+.empty-devices { padding: 40px 0; text-align: center; }
 
-.password-form {
-  max-width: 500px;
-}
-
-.empty-devices {
-  padding: 40px 0;
-  text-align: center;
-}
-
+/* 关于页面 */
 .about-card {
   text-align: center;
-  padding: 32px 0;
+  padding: 28px 0;
 }
 
 .about-logo {
-  margin-bottom: 24px;
-  
+  margin-bottom: 20px;
+
   img {
-    width: 80px;
-    height: 80px;
-    margin-bottom: 16px;
+    width: 72px; height: 72px;
+    margin-bottom: 14px;
+    filter: drop-shadow(0 6px 20px rgba(124,58,237,0.3));
   }
-  
+
   h3 {
     font-size: 20px;
-    font-weight: 600;
-    color: #303133;
-    margin: 0 0 8px 0;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 6px 0;
   }
-  
-  .version {
-    font-size: 14px;
-    color: #909399;
-    margin: 0;
-  }
+
+  .version { font-size: 13px; color: var(--text-muted); margin: 0; }
 }
 
-.about-info {
-  max-width: 400px;
-  margin: 0 auto;
-}
+.about-info { max-width: 400px; margin: 0 auto; }
 
 .info-row {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #ebeef5;
-  
-  &:last-child {
-    border-bottom: none;
-  }
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border-subtle);
+
+  &:last-child { border-bottom: none; }
 }
 
-.info-label {
-  font-size: 14px;
-  color: #606266;
-}
-
-.info-value {
-  font-size: 14px;
-  color: #303133;
-}
+.info-label { font-size: 13px; color: var(--text-secondary); }
+.info-value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
 
 .link-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 14px 18px;
 }
 
 .link-item {
@@ -1031,23 +1020,25 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 16px;
+  padding: 14px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
   transition: all 0.2s;
-  
-  .el-icon {
-    font-size: 24px;
-    color: #409EFF;
-  }
-  
-  span {
-    font-size: 12px;
-    color: #606266;
-  }
-  
+
+  .el-icon { font-size: 22px; color: var(--color-primary); }
+  span { font-size: 12px; color: var(--text-secondary); }
+
   &:hover {
-    background-color: #f5f7fa;
+    background: var(--color-primary-subtle);
+    border-color: var(--border-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(124,58,237,0.15);
   }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 </style>

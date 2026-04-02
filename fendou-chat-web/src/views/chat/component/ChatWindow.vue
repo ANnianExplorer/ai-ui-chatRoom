@@ -77,18 +77,12 @@
       </div>
 
       <div v-for="msg in getMessages" :key="msg.id || msg.createTime + msg.sendId">
-        <!-- 撤回消息统一展示 -->
-        <div v-if="msg.isRecalled === 1" class="left" :class="{ right: msg.sendId === state.currentUser.id }">
-          <img v-if="msg.sendId !== state.currentUser.id" :src="msg.chatAvatar" class="avatar" />
-          <div class="message-wrapper">
-            <div class="message-container">
-              <div class="recalled-message">
-                <el-icon><Delete /></el-icon>
-                {{ msg.sendId === state.currentUser.id ? '你' : (msg.realName || '对方') }}撤回了一条消息
-              </div>
-            </div>
-          </div>
-          <img v-if="msg.sendId === state.currentUser.id" :src="state.currentUser.avatar" class="avatar" />
+        <!-- 撤回消息：居中系统通知，不显示气泡 -->
+        <div v-if="msg.isRecalled === 1" class="recall-system-notice">
+          <span>
+            <el-icon style="vertical-align: middle; margin-right: 3px;"><Delete /></el-icon>
+            {{ msg.sendId === state.currentUser.id ? '你' : (msg.realName || '对方') }}撤回了一条消息
+          </span>
         </div>
 
         <!-- 接收方消息 -->
@@ -97,16 +91,27 @@
           <div class="message-wrapper">
             <span v-if="chat.type === 2" class="sender-name">{{ msg.realName }}</span>
             <div class="message-container">
+              <!-- 回复引用块（接收方） -->
+              <div v-if="getMsgInfo(msg.content).quote" class="reply-quote reply-quote-left">
+                <span class="reply-quote-sender">{{ getMsgInfo(msg.content).quote.name }}</span>
+                <span class="reply-quote-text">{{ getMsgInfo(msg.content).quote.text }}</span>
+              </div>
               <el-dropdown placement="bottom-start" trigger="contextmenu">
                 <p v-if="msg.reasoningContent && msg.reasoningContent.trim() !== ''" class="reasoning-content">{{ msg.reasoningContent }}</p>
 
                 <!-- 文本 -->
                 <div v-if="msg.contentType === 'text'">
-                  <p class="message">{{ msg.content }}</p>
+                  <p class="message">{{ getMsgInfo(msg.content).text }}</p>
                 </div>
-                <!-- 图片 -->
+                <!-- 图片 (接收方) -->
                 <div v-else-if="msg.contentType === 'image'" class="image-wrapper">
-                  <el-image :src="msg.content" :preview-src-list="getImagePreviewList(msg.content)" class="image-message" />
+                  <el-image
+                    :src="msg.content"
+                    :preview-src-list="getImagePreviewList(msg.content)"
+                    preview-teleported
+                    fit="cover"
+                    :initial-index="0"
+                  />
                 </div>
                 <!-- 文件 -->
                 <div v-else-if="msg.contentType === 'file'" class="file-message">
@@ -115,7 +120,6 @@
                     <p class="file-name">{{ msg.fileName }}</p>
                     <p class="file-size">{{ formatFileSize(msg.fileSize) }}</p>
                   </div>
-                  <el-button type="primary" size="small" @click="downloadFile(msg.content)">下载</el-button>
                 </div>
                 <!-- 投票 -->
                 <div v-else-if="msg.contentType === 'vote'" class="vote-message" @click="openVoteDialog(msg)">
@@ -148,6 +152,9 @@
             </div>
             <div class="timestamp-wrapper">
               <span class="timestamp">{{ msg.createTime }}</span>
+              <el-button v-if="msg.contentType === 'file'" class="download-btn-inline" @click="downloadFile(msg.content)" title="下载" link>
+                <el-icon><Download /></el-icon>
+              </el-button>
               <el-button :class="['favorite-btn-inline', msg.isFavorite ? 'favorite-active' : '']" @click="handleMessageFavorite(msg)" title="收藏" link>
                 <el-icon><Star /></el-icon>
               </el-button>
@@ -159,14 +166,25 @@
         <div class="right" v-else>
           <div class="message-wrapper">
             <div class="message-container">
+              <!-- 回复引用块（发送方） -->
+              <div v-if="getMsgInfo(msg.content).quote" class="reply-quote reply-quote-right">
+                <span class="reply-quote-sender">{{ getMsgInfo(msg.content).quote.name }}</span>
+                <span class="reply-quote-text">{{ getMsgInfo(msg.content).quote.text }}</span>
+              </div>
               <el-dropdown placement="bottom-end" trigger="contextmenu">
                 <!-- 文本 -->
                 <div v-if="msg.contentType === 'text'">
-                  <p class="message">{{ msg.content }}</p>
+                  <p class="message">{{ getMsgInfo(msg.content).text }}</p>
                 </div>
-                <!-- 图片 -->
+                <!-- 图片 (发送方) -->
                 <div v-else-if="msg.contentType === 'image'" class="image-wrapper">
-                  <el-image :src="msg.content" :preview-src-list="getImagePreviewList(msg.content)" class="image-message" />
+                  <el-image
+                    :src="msg.content"
+                    :preview-src-list="getImagePreviewList(msg.content)"
+                    preview-teleported
+                    fit="cover"
+                    :initial-index="0"
+                  />
                 </div>
                 <!-- 文件 -->
                 <div v-else-if="msg.contentType === 'file'" class="file-message">
@@ -175,7 +193,6 @@
                     <p class="file-name">{{ msg.fileName }}</p>
                     <p class="file-size">{{ formatFileSize(msg.fileSize) }}</p>
                   </div>
-                  <el-button size="small" @click="downloadFile(msg.content)" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white">下载</el-button>
                 </div>
                 <!-- 投票 -->
                 <div v-else-if="msg.contentType === 'vote'" class="vote-message" @click="openVoteDialog(msg)">
@@ -208,10 +225,14 @@
               </el-dropdown>
             </div>
             <div class="timestamp-wrapper" style="justify-content: flex-end;">
-              <span class="read-status" :class="{read: msg.isRead === 1}">
-                {{ msg.isRead === 1 ? '✓✓' : '✓' }}
+              <!-- 非AI聊天显示发送状态；私聊额外显示已读回执 -->
+              <span v-if="chat.type !== 3" class="read-status" :class="{read: msg._read && chat.type == 1}">
+                {{ (msg._read && chat.type == 1) ? '✓✓' : '✓' }}
               </span>
               <span class="timestamp">{{ msg.createTime }}</span>
+              <el-button v-if="msg.contentType === 'file'" class="download-btn-inline" @click="downloadFile(msg.content)" title="下载" link>
+                <el-icon><Download /></el-icon>
+              </el-button>
               <el-button :class="['favorite-btn-inline', msg.isFavorite ? 'favorite-active' : '']" @click="handleMessageFavorite(msg)" title="收藏" link>
                 <el-icon><Star /></el-icon>
               </el-button>
@@ -257,15 +278,22 @@
     </div>
 
     <!-- AI辅助回复建议 -->
-    <div v-if="state.aiSuggestions.length > 0 && chat.type !== 3" class="ai-suggestions" style="padding: 6px 16px 0;">
+    <div v-if="state.aiSuggestionsLoading || state.aiSuggestions.length > 0" class="ai-suggestions" style="padding: 6px 16px 0;">
       <span style="font-size:12px;color:#9ca3af;flex-shrink:0">💡 建议：</span>
-      <span
-        v-for="(sug, idx) in state.aiSuggestions"
-        :key="idx"
-        class="ai-suggestion-chip"
-        @click="state.message = sug; state.aiSuggestions = []"
-      >{{ sug }}</span>
-      <el-button link size="small" @click="state.aiSuggestions = []" style="color:#9ca3af">×</el-button>
+      <template v-if="state.aiSuggestionsLoading">
+        <span style="font-size:12px;color:#8b5cf6;display:flex;align-items:center;gap:6px">
+          <el-icon class="is-loading"><Loading /></el-icon> 思考中...
+        </span>
+      </template>
+      <template v-else>
+        <span
+          v-for="(sug, idx) in state.aiSuggestions"
+          :key="idx"
+          class="ai-suggestion-chip"
+          @click="state.message = sug; state.aiSuggestions = []"
+        >{{ sug }}</span>
+        <el-button link size="small" @click="state.aiSuggestions = []" style="color:#9ca3af">×</el-button>
+      </template>
     </div>
 
     <!-- 回复引用条 -->
@@ -283,6 +311,15 @@
       <div class="input-tools">
         <div v-if="chat.type === 3" class="ai-tools">
           <el-button :type="state.history ? 'primary' : 'default'" title="历史对话" plain @click="state.history = !state.history" size="small">历史对话</el-button>
+          <el-select v-model="state.currentRole" placeholder="选择AI角色" size="small" style="width: 140px; margin-left: 8px" @change="handleRoleChange">
+            <el-option label="默认助手" value="" />
+            <el-option label="🌹 情感大师" value="QGDS" />
+            <el-option label="📚 文学大师" value="WXDS" />
+            <el-option label="🎓 超级学霸" value="CXXB" />
+            <el-option label="💪 健康助手" value="JKZS" />
+            <el-option label="🏃 运动大师" value="YDDS" />
+            <el-option label="📨 消息代理人" value="XXDLR" />
+          </el-select>
         </div>
         
         <div class="basic-tools">
@@ -296,41 +333,53 @@
             </template>
           </el-popover>
 
-          <!-- 更多功能 -->
-          <el-dropdown v-if="chat.type !== 3" placement="top" trigger="click">
-            <el-button title="更多" plain circle size="small">
-              <el-icon size="16"><Plus /></el-icon>
+          <!-- 图片上传 -->
+          <el-tooltip v-if="chat.type !== 3" content="图片" placement="top">
+            <el-button plain circle size="small"
+              @click="$refs.imageUpload.$el.querySelector('input[type=file]').click()">
+              <el-icon size="16"><Picture /></el-icon>
             </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item>
-                  <span @click="$refs.imageUpload.$el.querySelector('input[type=file]').click()">
-                    <el-icon><Picture /></el-icon> 图片
-                  </span>
-                  <el-upload ref="imageUpload" :action="state.uploadApi" :on-success="handleImageUpload" :before-upload="beforeImageUpload" :show-file-list="false" :accept="'image/*'" name="file" :headers="state.fileHeaders" style="display: none;" />
-                </el-dropdown-item>
-                <el-dropdown-item>
-                  <span @click="$refs.fileUpload.$el.querySelector('input[type=file]').click()">
-                    <el-icon><FolderOpened /></el-icon> 文件
-                  </span>
-                  <el-upload ref="fileUpload" :action="state.uploadApi" :on-success="handleFileUpload" :before-upload="beforeFileUpload" :accept="'.pdf,.doc,.docx,.xls,.xlsx,.txt,.ppt,.pptx'" :show-file-list="false" :headers="state.fileHeaders" name="file" style="display: none;" />
-                </el-dropdown-item>
-                <el-dropdown-item v-if="chat.type === 2" @click="openCreateVoteDialog">
-                  <el-icon><DataAnalysis /></el-icon> 发起投票
-                </el-dropdown-item>
-                <el-dropdown-item @click="sendLocationMessage">
-                  <el-icon><Location /></el-icon> 位置分享
-                </el-dropdown-item>
-                <el-dropdown-item v-if="chat.type !== 3" @click="state.showScheduledDialog = true">
-                  <el-icon><Clock /></el-icon> 定时发送
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          </el-tooltip>
+          <el-upload ref="imageUpload" :action="state.uploadApi" :on-success="handleImageUpload"
+            :before-upload="beforeImageUpload" :show-file-list="false" :accept="'image/*'"
+            name="file" :headers="state.fileHeaders" style="display:none;" />
 
-          <!-- AI功能按钮（群聊显示） -->
+          <!-- 文件上传 -->
+          <el-tooltip v-if="chat.type !== 3" content="文件" placement="top">
+            <el-button plain circle size="small"
+              @click="$refs.fileUpload.$el.querySelector('input[type=file]').click()">
+              <el-icon size="16"><FolderOpened /></el-icon>
+            </el-button>
+          </el-tooltip>
+          <el-upload ref="fileUpload" :action="state.uploadApi" :on-success="handleFileUpload"
+            :before-upload="beforeFileUpload" :accept="'.pdf,.doc,.docx,.xls,.xlsx,.txt,.ppt,.pptx'"
+            :show-file-list="false" :headers="state.fileHeaders" name="file" style="display:none;" />
+
+          <!-- 发起投票（群聊）-->
+          <el-tooltip v-if="chat.type === 2" content="发起投票" placement="top">
+            <el-button plain circle size="small" @click="openCreateVoteDialog">
+              <el-icon size="16"><DataAnalysis /></el-icon>
+            </el-button>
+          </el-tooltip>
+
+          <!-- 位置分享 -->
+          <el-tooltip v-if="chat.type !== 3" content="位置分享" placement="top">
+            <el-button plain circle size="small" @click="sendLocationMessage">
+              <el-icon size="16"><Location /></el-icon>
+            </el-button>
+          </el-tooltip>
+
+          <!-- 定时发送 -->
+          <el-tooltip v-if="chat.type !== 3" content="定时发送" placement="top">
+            <el-button plain circle size="small" @click="state.showScheduledDialog = true">
+              <el-icon size="16"><Clock /></el-icon>
+            </el-button>
+          </el-tooltip>
+
+          <!-- AI功能（群聊）-->
           <el-dropdown v-if="chat.type === 2" placement="top" trigger="click">
-            <el-button title="AI功能" size="small" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;border:none;border-radius:8px;padding:0 10px">
+            <el-button title="AI功能" size="small"
+              style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;border:none;border-radius:8px;padding:0 10px">
               <el-icon><MagicStick /></el-icon> AI
             </el-button>
             <template #dropdown>
@@ -434,6 +483,72 @@
         <el-button type="primary" @click="createVote" style="background:linear-gradient(135deg,#7c3aed,#9333ea);border:none">发起投票</el-button>
       </template>
     </el-dialog>
+    <!-- 投票详情/参与弹窗 -->
+    <el-dialog v-model="state.voteModal.visible" title="投票" width="440px" destroy-on-close>
+      <div v-if="state.voteModal.loading" style="text-align:center;padding:30px 0">
+        <el-icon class="is-loading" style="font-size:28px;color:#7c3aed"><Loading /></el-icon>
+        <p style="margin-top:10px;color:#9ca3af;font-size:13px">加载中...</p>
+      </div>
+      <template v-else-if="state.voteModal.data">
+        <p style="font-weight:700;font-size:16px;margin:0 0 6px">{{ state.voteModal.data.title }}</p>
+        <p style="font-size:12px;color:#9ca3af;margin:0 0 16px">
+          <template v-if="state.voteModal.hasVoted">你已投票，以下是当前结果</template>
+          <template v-else>{{ state.voteModal.data.multiChoice === 1 ? '多选' : '单选' }}，点击选项投票</template>
+        </p>
+
+        <!-- 已投票：展示结果进度条，同时允许改投 -->
+        <div v-if="state.voteModal.hasVoted">
+          <div v-for="opt in state.voteModal.data.options" :key="opt.id" style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px">
+              <span>
+                <el-icon v-if="opt.selected" style="color:#7c3aed;margin-right:4px"><Check /></el-icon>
+                {{ opt.content }}
+              </span>
+              <span style="color:#7c3aed;font-weight:600">{{ getVotePercent(opt, state.voteModal.data) }}%</span>
+            </div>
+            <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
+              <div :style="{width: getVotePercent(opt, state.voteModal.data) + '%'}"
+                style="height:100%;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:4px;transition:width 0.5s ease"></div>
+            </div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:3px">{{ opt.voteCount || 0 }} 票</div>
+          </div>
+          <!-- 允许改投 -->
+          <el-button link style="color:#7c3aed;font-size:13px;margin-top:8px" @click="state.voteModal.hasVoted = false; state.voteModal.selectedIds = []">
+            <el-icon><Refresh /></el-icon> 修改我的投票
+          </el-button>
+        </div>
+
+        <!-- 未投票：展示可选选项 -->
+        <div v-else>
+          <div
+            v-for="opt in state.voteModal.data.options" :key="opt.id"
+            class="vote-option"
+            :class="{ selected: state.voteModal.selectedIds.includes(opt.id) }"
+            @click="toggleVoteOption(opt.id)"
+          >
+            <span style="flex:1;font-size:14px">{{ opt.content }}</span>
+            <el-icon v-if="state.voteModal.selectedIds.includes(opt.id)" style="color:#7c3aed"><Check /></el-icon>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <template v-if="!state.voteModal.hasVoted && state.voteModal.data">
+          <el-button @click="state.voteModal.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitVote"
+            :loading="state.voteModal.submitting"
+            :disabled="state.voteModal.selectedIds.length === 0"
+            style="background:linear-gradient(135deg,#7c3aed,#9333ea);border:none">
+            确认投票
+          </el-button>
+        </template>
+        <el-button v-else type="primary" @click="state.voteModal.visible = false"
+          style="background:linear-gradient(135deg,#7c3aed,#9333ea);border:none">
+          关闭
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 群公告编辑弹窗 -->
     <el-dialog
       v-model="state.showAnnouncementDialog"
@@ -464,25 +579,25 @@
 </template>
 
 <style scoped lang="scss">
-/* ========== 全局动效 ========== */
+/* ========== 动效 ========== */
 @keyframes slideInUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  50%       { opacity: 0.45; }
 }
 @keyframes typing-dot {
   0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-4px); }
+  50%       { transform: translateY(-5px); }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.85); }
+  from { opacity: 0; transform: scale(0.88); }
   to   { opacity: 1; transform: scale(1); }
 }
 
@@ -491,20 +606,17 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--chat-bg-color, #f0f2f5);
-  border: 1px solid rgba(0,0,0,0.06);
-  transition: all 0.3s ease;
-  border-radius: 0 12px 12px 0;
+  background: var(--chat-window-bg);
   overflow: hidden;
+  font-family: var(--font-sans);
 }
 
-/* 空状态样式 */
+/* 空状态 */
 .chat-container.empty-state1 {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100%;
-  background: linear-gradient(135deg, #f5f7ff 0%, #ede9fe 100%);
 }
 
 .empty-content1 {
@@ -512,36 +624,33 @@
   animation: scaleIn 0.5s ease;
 }
 
-.empty-logo {
-  margin-bottom: 24px;
-}
+.empty-logo1 { margin-bottom: 24px; }
 
 .app-logo {
-  width: 200px;
+  width: 180px;
   height: auto;
-  filter: drop-shadow(0 8px 24px rgba(124, 58, 237, 0.2));
-  animation: pulse 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 32px rgba(124, 58, 237, 0.3));
+  animation: pulse 3.5s ease-in-out infinite;
 }
 
 .empty-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  margin-bottom: 10px;
+  background: var(--brand-gradient-3);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 1px;
+  letter-spacing: 0.04em;
 }
 
 .empty-subtitle {
-  font-size: 15px;
-  color: #8b5cf6;
+  font-size: 14px;
+  color: var(--text-muted);
   font-weight: 400;
-  opacity: 0.8;
 }
 
-/* 已选择聊天对象的容器 */
+/* 已选择聊天容器 */
 .chat-container.selected {
   display: flex;
   flex-direction: column;
@@ -549,24 +658,27 @@
   overflow: hidden;
 }
 
-/* 聊天头部 */
+/* ========== 聊天头部 ========== */
 .chat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
-  border-bottom: 1px solid rgba(124, 58, 237, 0.12);
-  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.08);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  background: var(--chat-header-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  z-index: 10;
 }
 
 .chat-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e1b4b;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
   margin: 0 0 2px 0;
+  letter-spacing: 0.02em;
 }
 
 .chat-status {
@@ -574,352 +686,379 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #8b5cf6;
+  color: var(--color-primary);
   margin: 0;
 }
 
-/* 聊天消息区域 */
+/* ========== 消息区域 ========== */
 .chat-window {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  background: var(--chat-bg-color, #f0f2f5);
-  padding: 20px 16px;
-  min-height: 200px;
+  padding: 20px 20px 10px;
   position: relative;
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(124, 58, 237, 0.2);
-    border-radius: 2px;
-    &:hover { background: rgba(124, 58, 237, 0.4); }
-  }
   scrollbar-width: thin;
-  scrollbar-color: rgba(124, 58, 237, 0.2) transparent;
-  transition: background-color 0.3s ease;
+  scrollbar-color: rgba(124,58,237,0.2) transparent;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(124,58,237,0.2);
+    border-radius: 999px;
+    &:hover { background: rgba(124,58,237,0.4); }
+  }
 }
 
-/* 输入区域 */
+/* ========== 输入区域 ========== */
 .input-area {
-  padding: 12px 16px 10px;
-  background: linear-gradient(180deg, #ffffff 0%, #faf9ff 100%);
-  border-top: 1px solid rgba(124, 58, 237, 0.1);
+  padding: 12px 16px 12px;
+  background: var(--chat-input-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 -4px 16px rgba(124, 58, 237, 0.06);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  transition: all 0.25s ease;
 }
 
-/* 工具栏 */
 .input-tools {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  padding: 2px 0;
 }
 
-/* AI相关按钮 */
 .ai-tools {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-right: 16px;
+  margin-right: 12px;
 }
 
-/* 基础工具按钮 */
 .basic-tools {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-/* 输入框和发送按钮容器 */
 .input-main {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-end;
 }
 
-/* 消息输入框 */
 .message-input {
   flex: 1;
   min-width: 0;
+
+  :deep(.el-textarea__inner) {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-sans) !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+    resize: none !important;
+
+    &:focus {
+      border-color: var(--input-focus-border) !important;
+      box-shadow: var(--input-focus-shadow) !important;
+    }
+    &::placeholder { color: var(--text-muted) !important; }
+  }
 }
 
-/* 发送按钮 */
-.send-button {
-  white-space: nowrap;
-  min-width: 80px;
-  padding: 0 16px;
-  height: 36px;
-  flex-shrink: 0;
-}
-
-/* 提示文本 */
 .hint-text {
-  font-size: 12px;
-  color: #999;
-  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
-/* ========== 消息气泡布局 ========== */
+/* ========== 气泡布局 ========== */
 .left {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   gap: 10px;
-  animation: slideInUp 0.25s ease;
+  animation: slideInUp 0.22s ease both;
 }
 
 .right {
   display: flex;
   justify-content: flex-end;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   gap: 10px;
-  animation: slideInUp 0.25s ease;
+  animation: slideInUp 0.22s ease both;
+  position: relative;
 }
 
-/* 头像样式 */
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 38px; height: 38px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 2px solid rgba(255,255,255,0.8);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  border: 2px solid var(--border-default);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   object-fit: cover;
 }
 
-/* 消息容器样式 */
-.message-container {
-  position: relative;
-  max-width: 68%;
-}
-
-/* 左侧消息容器（接收方） */
-.left .message-container {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  border-radius: 4px 18px 18px 18px;
-  padding: 10px 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255,255,255,0.6);
-  position: relative;
-}
-
-/* 右侧消息容器（发送方） */
-.right .message-container {
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
-  border-radius: 18px 4px 18px 18px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
-  position: relative;
-}
-
-/* 左侧气泡小三角 */
-.left .message-container::before {
-  content: '';
-  position: absolute;
-  top: 12px;
-  left: -6px;
-  width: 0;
-  height: 0;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-right: 6px solid rgba(255, 255, 255, 0.92);
-}
-
-/* 右侧气泡小三角 */
-.right .message-container::after {
-  content: '';
-  position: absolute;
-  top: 12px;
-  right: -6px;
-  width: 0;
-  height: 0;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-left: 6px solid #9333ea;
-}
-
-/* 左侧消息包装器 */
+/* 消息包装器 */
 .left .message-wrapper {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  /* 左侧留出头像(38px)+间距(10px)的空间 */
+  max-width: calc(100% - 48px);
+  min-width: 0;
 }
 
-/* 右侧消息包装器 */
 .right .message-wrapper {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
   flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  /* 右侧同样留出头像(38px)+间距(10px)，防止内容盖住头像 */
+  max-width: calc(100% - 48px);
+  min-width: 0;
 }
 
-/* 文本消息内容的包装器 */
-.message-container .message-wrapper {
-  display: block;
-  gap: 0;
+/* 消息容器 */
+.message-container {
+  position: relative;
+  max-width: 100%;   /* 受父级 message-wrapper 约束，不再用固定70% */
+  min-width: 0;
 }
 
-/* 文本消息内容 - 接收方 */
+.left .message-container {
+  background: var(--bubble-left-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 4px 16px 16px 16px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border: 1px solid var(--bubble-left-border);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 11px; left: -6px;
+    border: 6px solid transparent;
+    border-right-color: var(--bubble-left-bg);
+    border-left: none;
+  }
+}
+
+.right .message-container {
+  background: var(--bubble-right-bg);
+  border-radius: 16px 4px 16px 16px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 11px; right: -6px;
+    border: 6px solid transparent;
+    border-left-color: #9333ea;
+    border-right: none;
+  }
+}
+
+/* 文本气泡宽度限制（仅文字内容需要70%约束，特殊类型有自己的宽度） */
+.left .message-container:has(.message),
+.right .message-container:has(.message) {
+  max-width: 70%;
+}
+
+/* 文本消息 */
 .left .message {
   word-wrap: break-word;
   white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0;
   font-size: 14px;
-  color: #1e1b4b;
+  color: var(--bubble-left-text);
 }
 
-/* 文本消息内容 - 发送方 */
 .right .message {
   word-wrap: break-word;
   white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0;
   font-size: 14px;
-  color: #ffffff;
+  color: var(--bubble-right-text);
 }
 
-/* 撤回消息样式 */
-.recalled-message {
-  color: #9ca3af;
-  font-style: italic;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* 撤回提示 */
+.recall-system-notice {
+  text-align: center;
+  margin: 2px 0 14px;
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border-subtle);
+  }
 }
 
-.right .recalled-message {
-  color: rgba(255,255,255,0.65);
-}
-
-/* 发送方名称 */
-.sender-name {
+/* 回复引用块 */
+.reply-quote {
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
   font-size: 12px;
-  color: #7c3aed;
-  margin-bottom: 4px;
-  display: block;
-  font-weight: 500;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.75;
+  cursor: default;
 }
 
-/* ========== 时间戳 & 收藏按钮 ========== */
+.reply-quote-left {
+  background: rgba(0,0,0,0.05);
+  border-left: 3px solid var(--color-primary);
+}
+
+.reply-quote-right {
+  background: rgba(255,255,255,0.15);
+  border-left: 3px solid rgba(255,255,255,0.6);
+}
+
+.reply-quote-sender {
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: 11px;
+}
+
+.reply-quote-right .reply-quote-sender { color: rgba(255,255,255,0.9); }
+
+.reply-quote-text {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+.reply-quote-right .reply-quote-text { color: rgba(255,255,255,0.8); }
+
+/* 发件人名称 */
+.sender-name {
+  font-size: 11px;
+  color: var(--color-primary);
+  margin-bottom: 3px;
+  display: block;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ========== 时间戳 & 操作 ========== */
 .timestamp-wrapper {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 5px;
+  gap: 5px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.left:hover .timestamp-wrapper,
+.right:hover .timestamp-wrapper {
+  opacity: 1;
 }
 
 .timestamp {
-  font-size: 11px;
-  color: #9ca3af;
+  font-size: 10px;
+  color: var(--text-muted);
   line-height: 1;
 }
 
-.right .timestamp {
-  color: rgba(255,255,255,0.6);
-}
-
-/* 已读状态 */
+/* 已读回执 */
 .read-status {
   font-size: 11px;
-  color: #9ca3af;
-}
-
-.right .read-status {
-  color: rgba(255,255,255,0.65);
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .read-status.read {
-  color: #7c3aed;
+  color: var(--color-primary);
 }
 
 .right .read-status.read {
-  color: rgba(255,255,255,0.9);
+  color: var(--color-primary-light);
 }
 
 .favorite-btn-inline {
-  padding: 0;
-  margin: 0;
-  min-width: auto;
-  height: auto;
-  line-height: 1;
+  padding: 0; margin: 0;
+  min-width: auto; height: auto; line-height: 1;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
   transition: all 0.2s;
   background: none !important;
   border: none !important;
 }
 
-.favorite-btn-inline:hover {
-  color: #f59e0b;
-  transform: scale(1.15);
-}
+.favorite-btn-inline:hover { color: #f59e0b; transform: scale(1.2); }
+.favorite-active { color: #f59e0b !important; }
 
-.favorite-active {
-  color: #f59e0b !important;
-}
-
-/* ========== 正在输入提示 ========== */
+/* ========== 正在输入 ========== */
 .typing-indicator {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 4px 16px 8px;
-  font-size: 13px;
-  color: #8b5cf6;
+  font-size: 12px;
+  color: var(--color-primary);
   animation: fadeIn 0.3s ease;
 }
 
 .typing-dots {
   display: flex;
   gap: 3px;
+  align-items: center;
 }
 
 .typing-dots span {
-  width: 6px;
-  height: 6px;
-  background: #8b5cf6;
+  width: 6px; height: 6px;
+  background: var(--color-primary);
   border-radius: 50%;
   display: inline-block;
-  animation: typing-dot 0.8s ease infinite;
-  &:nth-child(2) { animation-delay: 0.15s; }
-  &:nth-child(3) { animation-delay: 0.3s; }
+  animation: typing-dot 0.9s ease infinite;
+  &:nth-child(2) { animation-delay: 0.18s; }
+  &:nth-child(3) { animation-delay: 0.36s; }
 }
 
-/* ========== 底部新消息提醒 ========== */
+/* ========== 新消息提醒 ========== */
 .new-msg-badge {
   position: absolute;
-  bottom: 16px;
-  left: 50%;
+  bottom: 16px; left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
-  color: white;
-  padding: 6px 16px;
+  background: var(--brand-gradient-2);
+  color: #fff;
+  padding: 7px 18px;
   border-radius: 20px;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 4px 16px rgba(124,58,237,0.45);
   z-index: 10;
-  animation: scaleIn 0.3s ease;
+  animation: scaleIn 0.25s ease;
   white-space: nowrap;
   transition: all 0.2s;
-  &:hover { transform: translateX(-50%) scale(1.05); }
+  &:hover { transform: translateX(-50%) scale(1.06); }
 }
 
-/* ========== AI辅助回复建议 ========== */
+/* ========== AI建议 ========== */
 .ai-suggestions {
   display: flex;
   gap: 8px;
@@ -929,31 +1068,32 @@
 }
 
 .ai-suggestion-chip {
-  background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(147,51,234,0.12));
-  border: 1px solid rgba(124, 58, 237, 0.25);
-  color: #7c3aed;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 13px;
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--border-accent);
+  color: var(--color-primary);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
   &:hover {
-    background: linear-gradient(135deg, #7c3aed, #9333ea);
-    color: white;
+    background: var(--brand-gradient-2);
+    color: #fff;
     border-color: transparent;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124,58,237,0.35);
   }
 }
 
 /* ========== AI摘要面板 ========== */
 .ai-summary-panel {
   margin: 8px 16px;
-  background: linear-gradient(135deg, rgba(124,58,237,0.05), rgba(147,51,234,0.08));
-  border: 1px solid rgba(124, 58, 237, 0.2);
-  border-radius: 12px;
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--border-accent);
+  border-radius: 14px;
   padding: 12px 16px;
   animation: slideInUp 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .summary-header {
@@ -965,8 +1105,8 @@
 
 .summary-title {
   font-size: 13px;
-  font-weight: 600;
-  color: #7c3aed;
+  font-weight: 700;
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -974,25 +1114,27 @@
 
 .summary-content {
   font-size: 13px;
-  color: #374151;
-  line-height: 1.6;
+  color: var(--text-secondary);
+  line-height: 1.7;
   white-space: pre-wrap;
 }
 
-/* ========== 投票消息 ========== */
+/* ========== 投票 ========== */
 .vote-message {
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-  border: 1px solid rgba(124, 58, 237, 0.2);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-accent);
+  border-radius: 14px;
   padding: 14px;
-  min-width: 240px;
-  max-width: 300px;
+  width: 260px;
+  max-width: 100%;   /* 不超过父级 message-wrapper 的宽度 */
+  box-sizing: border-box;
 }
 
 .vote-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #4c1d95;
+  font-weight: 700;
+  color: var(--text-primary);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -1004,250 +1146,296 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  padding: 6px 10px;
-  background: white;
-  border-radius: 8px;
+  padding: 7px 10px;
+  background: var(--bg-base);
+  border-radius: 10px;
   cursor: pointer;
-  border: 1px solid rgba(124, 58, 237, 0.15);
+  border: 1px solid var(--border-default);
   transition: all 0.2s;
-  &:hover { border-color: #7c3aed; background: rgba(124,58,237,0.05); }
-  &.selected { border-color: #7c3aed; background: rgba(124,58,237,0.1); }
+  color: var(--text-primary);
+
+  &:hover { border-color: var(--color-primary); background: var(--color-primary-subtle); }
+  &.selected { border-color: var(--color-primary); background: var(--color-primary-subtle-2); }
 }
 
 .vote-progress {
   flex: 1;
   height: 4px;
-  background: rgba(124, 58, 237, 0.15);
+  background: var(--border-default);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .vote-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  background: var(--brand-gradient-2);
   border-radius: 2px;
   transition: width 0.5s ease;
 }
 
 .vote-count-text {
   font-size: 12px;
-  color: #7c3aed;
+  color: var(--color-primary);
   white-space: nowrap;
 }
 
 /* ========== 位置消息 ========== */
 .location-message {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.06));
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 14px;
   padding: 12px 14px;
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 200px;
+  width: 230px;
+  max-width: 100%;   /* 不超过父级 message-wrapper 的宽度 */
+  box-sizing: border-box;
   cursor: pointer;
   transition: all 0.2s;
-  &:hover { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+  &:hover { box-shadow: 0 4px 16px rgba(16,185,129,0.2); }
 }
 
-.location-icon {
-  font-size: 28px;
-  flex-shrink: 0;
-}
-
-.location-info {
-  flex: 1;
-}
+.location-icon { font-size: 24px; flex-shrink: 0; }
 
 .location-name {
   font-size: 14px;
   font-weight: 600;
-  color: #065f46;
+  color: var(--text-primary);
 }
 
 .location-address {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
+/* ========== 图片/位置/投票 气泡去除多余背景 ========== */
+/* 这些类型有自己的样式，不需要外层气泡的渐变背景；
+   max-width: 100% 使其受父级 message-wrapper 约束，不再溢出到头像 */
+.left .message-container:has(.image-wrapper),
+.right .message-container:has(.image-wrapper),
+.left .message-container:has(.location-message),
+.right .message-container:has(.location-message),
+.left .message-container:has(.vote-message),
+.right .message-container:has(.vote-message) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: fit-content;
+  max-width: 100%;
+}
+/* 去掉气泡三角箭头 */
+.left .message-container:has(.image-wrapper)::before,
+.right .message-container:has(.image-wrapper)::after,
+.left .message-container:has(.location-message)::before,
+.right .message-container:has(.location-message)::after,
+.left .message-container:has(.vote-message)::before,
+.right .message-container:has(.vote-message)::after {
+  display: none !important;
+}
+
+/* 文件消息气泡宽度：受父级约束即可 */
+.left .message-container:has(.file-message),
+.right .message-container:has(.file-message) {
+  max-width: 100%;
+  width: fit-content;
+}
+
 /* ========== 图片消息 ========== */
-:deep(.image-message) {
-  max-width: 240px;
-  max-height: 200px;
-  border-radius: 10px;
-  display: block;
-  object-fit: cover;
-  cursor: zoom-in;
-  transition: transform 0.2s;
-  &:hover { transform: scale(1.02); }
+.image-wrapper {
+  line-height: 0;
+
+  /* el-image 容器：相对约束，随父级宽度自适应 */
+  :deep(.el-image) {
+    max-width: min(240px, 100%);
+    max-height: 200px;
+    min-width: 60px;
+    min-height: 50px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: block;
+    cursor: zoom-in;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s;
+    &:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+    }
+  }
+
+  /* 实际图片元素 */
+  :deep(.el-image__inner) {
+    max-width: min(240px, 100%);
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    object-fit: cover;
+    display: block;
+    border-radius: 12px;
+  }
+
+  /* 加载中占位 */
+  :deep(.el-image__placeholder),
+  :deep(.el-image__error) {
+    width: 120px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-subtle);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
 }
 
 /* ========== 文件消息 ========== */
 .file-message {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 4px 0;
-  min-width: 200px;
+  width: 260px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-.file-icon {
-  font-size: 32px;
-  color: #7c3aed;
-  flex-shrink: 0;
-}
-
+.file-icon { font-size: 32px; color: var(--color-primary); flex-shrink: 0; }
 .right .file-icon { color: rgba(255,255,255,0.9); }
-
 .file-info { flex: 1; min-width: 0; }
 
 .file-name {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin: 0 0 2px;
-  color: #1e1b4b;
+  margin: 0 0 3px;
+  color: var(--bubble-left-text);
+  max-width: 220px;
 }
 
-.right .file-name { color: white; }
+.right .file-name { color: #fff; }
 
-.file-size {
-  font-size: 11px;
-  color: #9ca3af;
-  margin: 0;
-}
-
+.file-size { font-size: 11px; color: var(--text-muted); margin: 0; }
 .right .file-size { color: rgba(255,255,255,0.65); }
 
-/* ========== 群公告样式 ========== */
+/* ========== 下载按钮 ========== */
+.download-btn-inline {
+  padding: 0; margin: 0;
+  min-width: auto; height: auto; line-height: 1;
+  font-size: 13px;
+  color: var(--color-accent) !important;
+  transition: all 0.2s;
+  background: none !important;
+  border: none !important;
+}
+.download-btn-inline:hover { color: var(--color-primary) !important; transform: scale(1.2); }
+
+/* ========== 群公告 ========== */
 .group-announcement {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.12));
-  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+  background: linear-gradient(135deg, rgba(245,158,11,0.07), rgba(251,191,36,0.05));
+  border-bottom: 1px solid rgba(245,158,11,0.2);
   padding: 8px 20px;
-  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .announcement-content {
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 100%;
   overflow: hidden;
 }
 
-.announcement-icon {
-  color: #f59e0b;
-  font-size: 16px;
-  flex-shrink: 0;
-}
+.announcement-icon { color: #f59e0b; font-size: 15px; flex-shrink: 0; }
 
 .announcement-text {
-  color: #92400e;
+  color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.4;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ========== 加载历史消息 ========== */
+/* ========== 加载更多 ========== */
 .load-more {
   text-align: center;
   padding: 8px 0 16px;
+  :deep(.el-link) {
+    font-size: 12px;
+    color: var(--color-primary);
+  }
 }
 
-/* ========== 定时发送标签 ========== */
+/* ========== 定时标签 ========== */
 .scheduled-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(245,158,11,0.15);
+  background: rgba(245,158,11,0.12);
   color: #d97706;
   font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 3px 8px;
+  border-radius: 12px;
   margin-top: 4px;
+  /* 不超过消息包装器宽度，超长文字做截断 */
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ========== 弹窗样式 ========== */
+/* ========== 弹窗全局覆盖 ========== */
+:deep(.el-dialog) {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow-lg) !important;
+}
+
 :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
-  border-radius: 12px 12px 0 0;
-  padding: 16px 20px;
+  background: var(--brand-gradient-2) !important;
+  padding: 14px 20px !important;
 }
 
 :deep(.el-dialog__title) {
-  color: white !important;
-  font-weight: 600;
+  color: #fff !important;
+  font-weight: 700 !important;
 }
 
 :deep(.el-dialog__headerbtn .el-dialog__close) {
-  color: white;
-}
-
-:deep(.el-dialog) {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* 群公告样式 */
-.group-announcement {
-  background-color: #f0f9ff;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 12px 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.announcement-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-.announcement-icon {
-  color: #36cfc9;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.announcement-text {
-  color: #303133;
-  font-size: 14px;
-  line-height: 1.5;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 群公告弹窗样式 */
-:deep(.el-dialog__header) {
-  background-color: #fafafa;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-:deep(.el-dialog__title) {
-  color: #303133;
-  font-weight: 600;
+  color: rgba(255,255,255,0.8) !important;
 }
 
 :deep(.el-textarea__inner) {
+  background: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--text-primary) !important;
   resize: vertical;
   min-height: 120px;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 10px !important;
+  font-family: var(--font-sans) !important;
 }
 
-:deep(.el-textarea__count) {
-  color: #909399;
+/* AI思考内容 */
+:deep(.reasoning-content) {
+  background: var(--bg-muted);
+  border-left: 3px solid var(--color-accent);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
   font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: pre-wrap;
+  margin-bottom: 6px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 </style>
 
@@ -1317,6 +1505,10 @@ const handleEmoji = (e) => {
   state.message += e.native
 }
 
+const handleRoleChange = () => {
+  state.messages = []
+}
+
 const chatRef = ref(null)
 const state = reactive({
   currentUser: userStore.user,
@@ -1333,6 +1525,7 @@ const state = reactive({
   },
   thinking: false,
   history: false,
+  currentRole: '',
 
   // 群公告相关
   groupCall: '',
@@ -1362,6 +1555,7 @@ const state = reactive({
 
   // AI 建议回复
   aiSuggestions: [],
+  aiSuggestionsLoading: false,
 
   // 定时发送
   showScheduledDialog: false,
@@ -1376,6 +1570,16 @@ const state = reactive({
     expireTime: null,
     multiChoice: false,
     anonymous: false
+  },
+
+  // 投票详情/参与弹窗
+  voteModal: {
+    visible: false,
+    loading: false,
+    data: null,        // { id, title, multiChoice, options:[{id,content,voteCount,selected}] }
+    selectedIds: [],   // 当前选中的选项 ID 列表
+    hasVoted: false,   // 当前用户是否已投票
+    submitting: false
   }
 })
 
@@ -1552,6 +1756,7 @@ watch(
       state.messages = []
       state.pIndex = 1
       state.isInitialLoad = true // 切换聊天时重置为初始加载状态
+      state.currentRole = '' // 切换聊天时重置AI角色
       getMessage(val.chatId)
       
       // 如果是群聊，获取群公告和群主信息
@@ -1650,6 +1855,17 @@ watch(
       return
     }
 
+    // 处理已读回执：对方已读，把本地发出的消息标记为已读
+    if (newVal.type === 'READ_RECEIPT' && props.chat && newVal.chatId === props.chat.chatId) {
+      state.messages.forEach(m => {
+        if (m.sendId === state.currentUser.id && !m._read) {
+          m._read = true
+        }
+      })
+      state.messages = [...state.messages]
+      return
+    }
+
     // 处理系统公告
     if (newVal.type === 'SYSTEM_NOTICE') {
       ElMessage({
@@ -1674,6 +1890,20 @@ watch(
       return
     }
 
+    // 处理投票结果更新（其他成员投票后广播）
+    if (newVal.contentType === 'VOTE_ACTION' && props.chat && newVal.chatId === props.chat.chatId) {
+      const msgIdx = state.messages.findIndex(m => {
+        const v = parseVoteContent(m.content)
+        return v.id === newVal.voteId
+      })
+      if (msgIdx !== -1) {
+        const updatedMsg = { ...state.messages[msgIdx], content: JSON.stringify(newVal.voteData) }
+        state.messages.splice(msgIdx, 1, updatedMsg)
+        console.log('收到投票更新广播，已刷新聊天气泡')
+      }
+      return
+    }
+
     if (props.chat && newVal.chatId === props.chat.chatId) {
       if (newVal.sendId === state.currentUser.id) return
 
@@ -1685,6 +1915,15 @@ watch(
 
       state.messages.push(newVal)
       messageApi.clearUnreadMessage(newVal.chatId)
+
+      // 私聊：自动向对方发送已读回执
+      if (props.chat.type === 1) {
+        websocket.sendMessage({
+          type: 'READ_RECEIPT',
+          chatId: props.chat.chatId,
+          sendId: state.currentUser.id
+        })
+      }
 
       // 自动生成摘要（超过20条）
       if (props.chat?.type === 2 && state.messages.length >= 20 && !state.summaryGenerated) {
@@ -1707,6 +1946,7 @@ const sendMessage = async () => {
     const msg = buildMessage(state.message)
     state.messages.push(msg)
     state.message = ''
+    state.replyMsg = null  // 清除回复引用
     scrollToBottom()
 
     if (props.chat.type === 3) {
@@ -1735,7 +1975,8 @@ const sendMessage = async () => {
         body: JSON.stringify({
           prompt: msg.content,
           thinking: state.thinking,
-          history: state.history
+          history: state.history,
+          role: state.currentRole
         })
       })
 
@@ -1798,20 +2039,48 @@ const sendMessage = async () => {
   }
 }
 
+/**
+ * 解析消息 content：支持含回复引用的 JSON 格式，向下兼容普通文本
+ * 返回 { text: string, quote: {name, text} | null }
+ */
+const getMsgInfo = (content) => {
+  if (!content) return { text: '', quote: null }
+  try {
+    const obj = JSON.parse(content)
+    if (obj && typeof obj === 'object' && '_t' in obj) {
+      return { text: obj._t || '', quote: obj._r ? { name: obj._r.n, text: obj._r.c } : null }
+    }
+  } catch {}
+  return { text: content, quote: null }
+}
+
 // 构建消息
 const buildMessage = (content, contentType, file) => {
+  let finalContent = content
+  // 如果有回复引用，将引用信息嵌入 content JSON（利用现有 content 字段持久化）
+  if (state.replyMsg && (!contentType || contentType === 'text')) {
+    const quoteText = getMsgInfo(state.replyMsg.content).text  // 支持引用链
+    const truncated = quoteText.length > 60 ? quoteText.slice(0, 60) + '…' : quoteText
+    const quoteContent = state.replyMsg.contentType === 'text'
+      ? truncated
+      : state.replyMsg.contentType === 'image' ? '[图片]'
+      : state.replyMsg.contentType === 'file' ? `[文件] ${state.replyMsg.fileName || ''}`
+      : '[消息]'
+    const quoteName = state.replyMsg.realName || (state.replyMsg.sendId === state.currentUser.id ? '你' : '对方')
+    finalContent = JSON.stringify({ _t: content, _r: { n: quoteName, c: quoteContent } })
+  }
   return {
     chatId: props.chat.chatId,
     sendId: state.currentUser.id,
     chatAvatar: state.currentUser.avatar,
-    content: content,
+    content: finalContent,
     contentType: contentType || 'text',
     createTime: getFormatDate(),
     fileId: file?.id,
     fileName: file?.originalName,
     fileSize: file?.fileSize,
     fileType: file?.fileType,
-    isFavorite: false // 新增：标记是否已收藏
+    isFavorite: false
   }
 }
 
@@ -1926,17 +2195,33 @@ const generateSummary = async (auto = false) => {
 
 // 获取AI回复建议
 const getAiSuggestions = async () => {
-  const lastMsg = state.messages.slice(-3).map(m => m.content || '').join('\n')
+  // 获取最后一条非自己发送的消息
+  const othersMessages = state.messages.filter(m => m.sendId !== state.currentUser.id && m.contentType === 'text')
+  if (othersMessages.length === 0) {
+    ElMessage.warning('没有可回复的消息')
+    return
+  }
+  const lastOtherMsg = othersMessages[othersMessages.length - 1]
+  const lastMsgContent = lastOtherMsg.content || ''
+  
+  state.aiSuggestionsLoading = true
   try {
     const res = await request({
       url: '/ai/suggest',
       method: 'post',
-      data: { chatId: props.chat.chatId, lastMessage: lastMsg }
+      data: { chatId: props.chat.chatId, lastMessage: lastMsgContent }
     })
     if (res.code === 200 && Array.isArray(res.data)) {
       state.aiSuggestions = res.data.slice(0, 3)
+      ElMessage.success('AI 回复建议已生成')
+    } else {
+      ElMessage.error('生成回复建议失败')
     }
-  } catch {}
+  } catch {
+    ElMessage.error('AI 服务异常，请稍后重试')
+  } finally {
+    state.aiSuggestionsLoading = false
+  }
 }
 
 // 发送定时消息
@@ -1955,15 +2240,34 @@ const sendScheduledMessage = () => {
     return
   }
   const content = state.scheduledContent
-  const timeStr = new Date(state.scheduledTime).toLocaleString('zh-CN')
+  // 使用较短格式，避免徽章文字溢出：如 "04-02 15:30"
+  const d = new Date(state.scheduledTime)
+  const timeStr = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
   ElMessage.success(`消息将在 ${timeStr} 发送`)
   state.showScheduledDialog = false
-  const msg = buildMessage(content)
-  msg.scheduledTime = timeStr
-  state.messages.push(msg)
+
+  // 构建本地展示消息（带定时徽章）
+  const pendingMsg = buildMessage(content)
+  pendingMsg.scheduledTime = timeStr
+  pendingMsg._scheduledPending = true
+  state.messages.push(pendingMsg)
+
   setTimeout(() => {
-    websocket.sendMessage(msg)
+    // 关键修复：去掉 scheduledTime 再发送，否则后端会跳过 DB 保存
+    // 同时发送方的本地气泡也要更新（移除定时徽章）
+    const sendMsg = { ...pendingMsg }
+    delete sendMsg.scheduledTime
+    delete sendMsg._scheduledPending
+    websocket.sendMessage(sendMsg)
+
+    // 更新本地 pending 消息，移除定时徽章
+    const idx = state.messages.findIndex(m => m === pendingMsg)
+    if (idx !== -1) {
+      state.messages[idx] = { ...state.messages[idx], scheduledTime: null, _scheduledPending: false }
+    }
+    scrollToBottom()
   }, delay)
+
   state.scheduledContent = ''
   state.scheduledTime = null
 }
@@ -1993,11 +2297,13 @@ const sendLocationMessage = () => {
   )
 }
 
-// 打开位置
+// 打开位置（使用高德地图）
 const openLocation = (msg) => {
   const loc = parseLocationContent(msg.content)
   if (loc.lat && loc.lng) {
-    window.open(`https://maps.google.com/?q=${loc.lat},${loc.lng}`, '_blank')
+    // window.open(`https://maps.google.com/?q=${loc.lat},${loc.lng}`, '_blank')
+    // 高德地图位置标注 URI API：https://lbs.amap.com/api/uri-api/guide/travel/marker
+    window.open(`https://uri.amap.com/marker?position=${loc.lng},${loc.lat}&name=${encodeURIComponent(loc.name || '位置')}&src=FenDouChat&coordinate=wgs84&callnative=1`, '_blank')
   }
 }
 
@@ -2020,22 +2326,96 @@ const getVotePercent = (option, vote) => {
   return Math.round((option.voteCount || 0) / total * 100)
 }
 
-// 打开投票详情
+// 打开投票参与/查看弹窗
 const openVoteDialog = async (msg) => {
   const voteData = parseVoteContent(msg.content)
-  if (voteData.id) {
-    try {
-      const res = await request({ url: `/vote/${voteData.id}`, method: 'get' })
-      if (res.code === 200) {
-        ElMessageBox.alert(
-          `<b>${res.data.title}</b><br>` + (res.data.options || []).map(o =>
-            `${o.selected ? '✅' : '○'} ${o.content} (${o.voteCount || 0}票)`
-          ).join('<br>'),
-          '投票详情',
-          { dangerouslyUseHTMLString: true }
-        )
+  if (!voteData.id) return
+
+  state.voteModal.visible = true
+  state.voteModal.loading = true
+  state.voteModal.data = null
+  state.voteModal.selectedIds = []
+  state.voteModal.submitting = false
+  state.voteModal.hasVoted = false
+
+  try {
+    const res = await request({ url: `/vote/${voteData.id}`, method: 'get' })
+    if (res.code === 200) {
+      state.voteModal.data = res.data
+      // 优先使用后端返回的 hasVoted，兼容 options.selected 判断
+      state.voteModal.hasVoted = res.data.hasVoted === true || (res.data.options || []).some(o => o.selected === true)
+      console.log('投票详情加载:', res.data, '已投票:', state.voteModal.hasVoted)
+    } else {
+      ElMessage.error(res.msg || '获取投票详情失败')
+      state.voteModal.visible = false
+    }
+  } catch (e) {
+    console.error('获取投票详情失败:', e)
+    ElMessage.error('获取投票详情失败')
+    state.voteModal.visible = false
+  } finally {
+    state.voteModal.loading = false
+  }
+}
+
+// 切换选项（单选 or 多选）
+const toggleVoteOption = (optId) => {
+  const ids = state.voteModal.selectedIds
+  const idx = ids.indexOf(optId)
+  if (state.voteModal.data?.multiChoice) {
+    idx === -1 ? ids.push(optId) : ids.splice(idx, 1)
+  } else {
+    state.voteModal.selectedIds = idx === -1 ? [optId] : []
+  }
+}
+
+// 提交投票 → 写入数据库
+const submitVote = async () => {
+  if (!state.voteModal.data || state.voteModal.selectedIds.length === 0) return
+  state.voteModal.submitting = true
+  try {
+    const res = await request({
+      url: `/vote/${state.voteModal.data.id}/vote`,
+      method: 'post',
+      data: { optionIds: state.voteModal.selectedIds }
+    })
+    if (res.code === 200) {
+      ElMessage.success('投票成功！')
+      // 刷新投票详情展示最新结果
+      const detail = await request({ url: `/vote/${state.voteModal.data.id}`, method: 'get' })
+      if (detail.code === 200) {
+        state.voteModal.data = detail.data
+        state.voteModal.hasVoted = detail.data.hasVoted === true || (detail.data.options || []).some(o => o.selected === true)
+        state.voteModal.selectedIds = []
+        
+        // 同步更新聊天消息中的投票内容（展示最新票数）
+        // 使用 splice 强制触发 Vue 响应式更新
+        const msgIdx = state.messages.findIndex(m => {
+          const v = parseVoteContent(m.content)
+          return v.id === state.voteModal.data.id
+        })
+        if (msgIdx !== -1) {
+          const updatedMsg = { ...state.messages[msgIdx], content: JSON.stringify(detail.data) }
+          state.messages.splice(msgIdx, 1, updatedMsg)
+        }
+        
+        // 通过 WebSocket 向群内其他成员广播投票更新（VOTE_ACTION 消息类型）
+        const updatePayload = {
+          chatId: props.chat.chatId,
+          contentType: 'VOTE_ACTION',
+          voteId: state.voteModal.data.id,
+          voteData: detail.data
+        }
+        websocket.sendMessage(updatePayload)
+        console.log('投票成功，广播更新到群内其他成员')
       }
-    } catch {}
+    } else {
+      ElMessage.error(res.msg || '投票失败')
+    }
+  } catch {
+    ElMessage.error('投票请求失败，请稍后重试')
+  } finally {
+    state.voteModal.submitting = false
   }
 }
 

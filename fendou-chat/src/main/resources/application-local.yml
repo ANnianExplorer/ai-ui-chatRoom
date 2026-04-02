@@ -2,6 +2,24 @@
 server:
   port: 8090
 spring:
+  # ai
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: qwen2.5:3b
+    openai:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: aaa
+      chat:
+        options:
+          model: qwen-max-latest
+    zhipuai:
+      api-key: aaa
+      chat:
+        options:
+          model: glm-4.7-flash
+          temperature: 0.7
   # redis 配置
   data:
     redis:
@@ -21,7 +39,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/fen_dou_chats?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: yzh521
+    password: aaa
 
   devtools:
     restart:
@@ -50,11 +68,4 @@ logging:
     com.chat: debug
     org.springframework: info
 
-# 支持多种大模型，不限于以下模型
-ai:
-  model: glm-4-flash-250414 # 智谱语言模型名称，这个模型是免费的，想要更好的性能去官网看，换成其他付费的即可https://docs.bigmodel.cn/cn/guide/models/text/glm-4.5
-  api-key: efe16fd9222941608ff03fbc60d2b5ea.cWa73UTmxUj8YCUD # 访问密钥
-  api-url: https://open.bigmodel.cn/api/paas/v4/chat/completions # 请求地址
-#  model: qwq-32b       # 阿里百炼语言模型名称
-#  api-key: sk-xxxxxxxxxxxx
-#  api-url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+

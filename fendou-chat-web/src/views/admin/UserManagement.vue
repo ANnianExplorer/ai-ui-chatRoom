@@ -84,16 +84,14 @@
             >
               {{ scope.row.status === 1 ? '封禁' : '解封' }}
             </el-button>
-            <el-dropdown size="small" @command="(cmd) => handleUserAction(cmd, scope.row)" style="margin-left:4px">
-              <el-button size="small">更多<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="mute">🔇 群禁言</el-dropdown-item>
-                  <el-dropdown-item command="unmute">🔊 解除禁言</el-dropdown-item>
-                  <el-dropdown-item command="delete" divided style="color:#f56c6c">🗑️ 删除用户</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <el-button
+              type="danger"
+              size="small"
+              @click="handleDeleteUser(scope.row)"
+              icon="Delete"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -292,38 +290,17 @@ const handleBanUser = async (user) => {
   }
 }
 
-// 用户更多操作（群禁言等）
-const handleUserAction = async (cmd, user) => {
-  if (cmd === 'mute') {
-    const { value: duration } = await ElMessageBox.prompt(
-      `对用户 ${user.username} 设置禁言时长（分钟，默认60分钟）`,
-      '群禁言',
-      { inputValue: '60', inputPattern: /^\d+$/, inputErrorMessage: '请输入数字' }
-    ).catch(() => ({ value: null }))
-    if (!duration) return
-    // 需要选择群组，这里简化为全局禁言（groupId=0）
-    const res = await request({
-      url: '/admin/actions/mute',
-      method: 'post',
-      data: { userId: user.id, groupId: 0, muted: true, duration: parseInt(duration) }
-    })
-    if (res.code === 200) ElMessage.success(`已禁言 ${duration} 分钟`)
-  } else if (cmd === 'unmute') {
-    const res = await request({
-      url: '/admin/actions/mute',
-      method: 'post',
-      data: { userId: user.id, groupId: 0, muted: false }
-    })
-    if (res.code === 200) ElMessage.success('已解除禁言')
-  } else if (cmd === 'delete') {
-    try {
-      await ElMessageBox.confirm(`确定删除用户 ${user.username}？此操作不可恢复！`, '危险操作', { type: 'error', confirmButtonText: '确认删除' })
-      const res = await adminApi.users.deleteUser(user.id)
-      if (res.code === 200) {
-        ElMessage.success('用户已删除')
-        fetchUsers()
-      }
-    } catch {}
+// 删除用户
+const handleDeleteUser = async (user) => {
+  try {
+    await ElMessageBox.confirm(`确定删除用户 ${user.username}？此操作不可恢复！`, '危险操作', { type: 'error', confirmButtonText: '确认删除' })
+    const res = await adminApi.users.deleteUser(user.id)
+    if (res.code === 200) {
+      ElMessage.success('用户已删除')
+      fetchUsers()
+    }
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('删除用户失败')
   }
 }
 

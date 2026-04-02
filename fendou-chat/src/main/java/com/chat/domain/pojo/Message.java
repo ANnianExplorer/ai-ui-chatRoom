@@ -21,11 +21,16 @@ public class Message extends BasePOJO {
     private Integer sendId;
     private Integer fileId;
     private Integer isRead;
+
+    // 以下字段需执行 docs/db/upgrade_v2.sql 迁移后才持久化到DB
     // 是否已撤回：0-否，1-是
+    @TableField(exist = false)
     private Integer isRecalled;
     // 定时发送时间（为null则立即发送）
+    @TableField(exist = false)
     private String scheduledTime;
     // 消息回复的原消息ID
+    @TableField(exist = false)
     private Integer replyMsgId;
 
     @TableField(exist = false)

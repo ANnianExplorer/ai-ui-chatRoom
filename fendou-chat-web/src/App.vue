@@ -192,6 +192,6 @@ window.addEventListener('dark-mode-change', (e) => {
 
 #app {
   height: 100vh;
-  background-color: #fafafa;
+  background: var(--page-bg-gradient);
 }
 </style>

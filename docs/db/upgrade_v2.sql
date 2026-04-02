@@ -5,9 +5,9 @@ USE fen_dou_chats;
 
 -- 1. 消息表新增字段
 ALTER TABLE chat_message
-    ADD COLUMN IF NOT EXISTS is_recalled TINYINT DEFAULT 0 COMMENT '是否撤回：0-否，1-是',
-    ADD COLUMN IF NOT EXISTS scheduled_time VARCHAR(30) DEFAULT NULL COMMENT '定时发送时间',
-    ADD COLUMN IF NOT EXISTS reply_msg_id INT DEFAULT NULL COMMENT '回复的消息ID';
+    ADD COLUMN is_recalled TINYINT DEFAULT 0 COMMENT '是否撤回：0-否，1-是',
+    ADD COLUMN scheduled_time VARCHAR(30) DEFAULT NULL COMMENT '定时发送时间',
+    ADD COLUMN reply_msg_id INT DEFAULT NULL COMMENT '回复的消息ID';
 
 -- 2. 群投票表
 CREATE TABLE IF NOT EXISTS chat_vote (

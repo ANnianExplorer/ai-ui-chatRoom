@@ -95,21 +95,11 @@
             <span class="menu-text">数据大屏</span>
           </el-menu-item>
 
-          <!-- 系统运营 -->
-          <el-sub-menu index="operation">
-            <template #title>
-              <el-icon class="menu-icon"><Monitor /></el-icon>
-              <span class="menu-text">系统运营</span>
-            </template>
-            <el-menu-item index="/admin/announcement">
-              <el-icon class="menu-icon"><Bell /></el-icon>
-              <span class="menu-text">公告推送</span>
-            </el-menu-item>
-            <el-menu-item index="/admin/violation">
-              <el-icon class="menu-icon"><Warning /></el-icon>
-              <span class="menu-text">违规监控</span>
-            </el-menu-item>
-          </el-sub-menu>
+          <!-- 系统公告 -->
+          <el-menu-item index="/admin/announcement">
+            <el-icon class="menu-icon"><Bell /></el-icon>
+            <span class="menu-text">系统公告</span>
+          </el-menu-item>
 
           <!-- 系统设置 -->
           <el-sub-menu index="system-settings">
@@ -138,7 +128,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -159,6 +149,16 @@ const route = useRoute()
 // 计算当前激活的菜单
 const activeMenu = computed(() => {
   return route.path
+})
+
+// 挂载时标记为管理端页面，防止用户端主题样式污染
+onMounted(() => {
+  document.body.classList.add('admin-page')
+  document.documentElement.classList.remove('dark')
+  document.body.classList.remove('dark-mode')
+})
+onUnmounted(() => {
+  document.body.classList.remove('admin-page')
 })
 
 // 处理管理员退出登录
@@ -258,7 +258,7 @@ $transition-slow: 0.5s ease;
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  color: #ffffff;
+  color: #000000;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   letter-spacing: 1px;
 }
@@ -277,7 +277,7 @@ $transition-slow: 0.5s ease;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   transition: all $transition-normal;
-  color: #ffffff;
+  color: #000000;
   border: 1px solid rgba(255, 255, 255, 0.2);
 
   &:hover {

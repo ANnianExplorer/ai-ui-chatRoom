@@ -59,5 +59,7 @@ public class User extends BasePOJO {
 
     @TableField(exist = false)
     private String remark;
+
+
 }
 

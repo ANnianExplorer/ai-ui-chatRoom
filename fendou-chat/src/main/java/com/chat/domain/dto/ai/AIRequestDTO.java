@@ -29,4 +29,9 @@ public class AIRequestDTO {
     private boolean history;
 
 
+    /**
+     * AI角色类型：不传则使用默认AI助手，传角色枚举值如 QGDS/WXDS/CXXB/JKZS/YDDS/XXDLR
+     */
+    private String role;
+
 }

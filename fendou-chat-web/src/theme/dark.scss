@@ -1,43 +1,27 @@
 html.dark {
   #app {
-    background-color: var(--el-bg-color-page);
+    background: var(--page-bg-gradient);
   }
 
-  .login-container{
-        background-image: linear-gradient(to right, var(--el-bg-color-page), var(--el-bg-color-page));
-    
-    .login-wrapper{
-        background-image: linear-gradient(to right, var(--el-color-info-light-9), var(--el-color-info-light-9));
+  .login-container {
+    background-image: linear-gradient(to right, var(--el-bg-color-page), var(--el-bg-color-page));
+    .login-wrapper {
+      background-image: linear-gradient(to right, var(--el-color-info-light-9), var(--el-color-info-light-9));
     }
   }
 
-  .message{
-    background-color: var(--el-bg-color-page) !important;
+  /* 只给未被新样式覆盖的旧 .message 区域提供暗色背景 */
+  .image-message {
+    opacity: 0.85;
   }
 
-  
-  .image-message{
-    background-color: var(--el-bg-color-page) !important;
-    opacity: 0.8;
+  .hint {
+    background-color: rgba(30, 41, 59, 0.6) !important;
+    color: var(--text-secondary) !important;
   }
 
-  .file-message{
-    background-color: var(--el-bg-color-page) !important;
-  }
-
-  .hint{
-    background-color: var(--el-bg-color-page) !important;
-  }
-
-  .chat-list .active{
-    background-color: var(--el-bg-color-page) !important;
-  }
-
-  .chat-item:hover{
-    background-color: var(--el-bg-color-page) !important;
-  }
-
-  .emoji-mart{
-    background-color: var(--el-bg-color-page) !important;
+  .emoji-mart {
+    background-color: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
   }
 }

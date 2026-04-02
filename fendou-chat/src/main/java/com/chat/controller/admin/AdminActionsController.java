@@ -1,12 +1,18 @@
 package com.chat.controller.admin;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chat.core.common.handler.ChatWebSocketHandler;
 import com.chat.core.common.rersult.Result;
+import com.chat.domain.pojo.SystemAnnouncement;
+import com.chat.mapper.SystemAnnouncementMapper;
 import com.chat.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
@@ -21,6 +27,9 @@ public class AdminActionsController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private SystemAnnouncementMapper announcementMapper;
 
     /**
      * 封禁/解封用户
@@ -78,7 +87,7 @@ public class AdminActionsController {
     }
 
     /**
-     * 向所有在线用户广播系统公告
+     * 向所有在线用户广播系统公告（同时保存推送历史）
      */
     @PostMapping("/announce")
     public Result<?> sendAnnouncement(@RequestBody Map<String, String> body) {
@@ -87,10 +96,39 @@ public class AdminActionsController {
         if (content == null || content.trim().isEmpty()) {
             return Result.fail("公告内容不能为空").message("公告内容不能为空");
         }
+        
+        // 广播公告
         JSONObject notice = new JSONObject();
         notice.put("title", title != null ? title : "系统公告");
         notice.put("content", content);
         ChatWebSocketHandler.broadcastSystemNotice(notice);
+        
+        // 保存推送历史到数据库
+        SystemAnnouncement announcement = new SystemAnnouncement();
+        announcement.setTitle(title);
+        announcement.setContent(content);
+        announcement.setOnlineCount(ChatWebSocketHandler.userMap.size());
+        announcement.setStatus(1);
+        announcement.setIsDeleted(0);
+        announcement.setCreateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        announcementMapper.insert(announcement);
+        
         return Result.ok("公告发送成功");
+    }
+
+    /**
+     * 查询系统公告推送历史（分页）
+     */
+    @GetMapping("/announcements")
+    public Result<?> getAnnouncements(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        Page<SystemAnnouncement> result = announcementMapper.selectPage(
+                new Page<>(page, pageSize),
+                new LambdaQueryWrapper<SystemAnnouncement>()
+                        .eq(SystemAnnouncement::getIsDeleted, 0)
+                        .orderByDesc(SystemAnnouncement::getCreateTime)
+        );
+        return Result.ok(result);
     }
 }

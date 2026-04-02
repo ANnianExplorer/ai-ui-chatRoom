@@ -1,63 +1,80 @@
 <template>
-  <div>
-  <div class="chat-list-container">
-    <ul class="chat-list">
-      <el-empty v-if="filterChatList.length === 0" description="暂无会话" />
-      <li
-        v-for="item in filterChatList"
-        :key="item.id"
-        :class="{ active: state.activeChatId === item.chatId }"
-        @click="selectChat(item.chatId)"
-      >
-        <div class="chat-item">
-          <div class="avatar-container">
-            <img :src="item.avatar" alt="" class="avatar" />
-            <span
-              class="online-status"
-              :class="{
-                online: item.type === 1 && isOnline(item.chatId, item.status),
-                group: item.type === 2
-              }"
-            ></span>
-          </div>
-          <div class="chat-details">
-            <div class="chat-header-row">
-              <span class="chat-name">{{ item.remark || item.name }}</span>
-              <span class="chat-time" v-if="item.lastTime">{{ item.lastTime }}</span>
-            </div>
-            <div class="chat-preview-row">
-              <span class="chat-preview">
-                <template v-if="item.type === 1">
-                  <span :class="isOnline(item.chatId, item.status) ? 'online-text' : 'offline-text'">
-                    {{ isOnline(item.chatId, item.status) ? '● 在线' : '○ 离线' }}
+  <div class="cl-root">
+    <div class="chat-list-container">
+      <ul class="chat-list">
+        <el-empty
+          v-if="filterChatList.length === 0"
+          description="暂无会话"
+          class="chat-empty"
+        />
+        <transition-group name="chat-item-anim" tag="div">
+          <li
+            v-for="item in filterChatList"
+            :key="item.chatId"
+            :class="{ active: state.activeChatId === item.chatId }"
+            @click="selectChat(item.chatId)"
+          >
+            <div class="chat-item">
+              <!-- 头像 -->
+              <div class="avatar-container">
+                <img :src="item.avatar" alt="" class="avatar" />
+                <span
+                  class="status-dot"
+                  :class="{
+                    self:   item.type === 0,
+                    online: item.type === 1 && isOnline(item.chatId, item.status),
+                    group:  item.type === 2,
+                    ai:     item.type === 3
+                  }"
+                ></span>
+              </div>
+
+              <!-- 详情 -->
+              <div class="chat-details">
+                <div class="chat-header-row">
+                  <span class="chat-name">{{ item.remark || item.name }}</span>
+                  <span class="chat-time" v-if="item.lastTime">{{ item.lastTime }}</span>
+                </div>
+                <div class="chat-preview-row">
+                  <span class="chat-preview">
+                    <template v-if="item.type === 0">
+                      <span class="tag-self">自己</span>
+                    </template>
+                    <template v-else-if="item.type === 1">
+                      <span :class="isOnline(item.chatId, item.status) ? 'tag-online' : 'tag-offline'">
+                        {{ isOnline(item.chatId, item.status) ? '在线' : '离线' }}
+                      </span>
+                    </template>
+                    <template v-else-if="item.type === 2">
+                      <span class="tag-group">{{ getOnlineCount(item.chatId) }} 人在线</span>
+                    </template>
+                    <template v-else>
+                      <span class="tag-ai">AI 助手</span>
+                    </template>
                   </span>
-                </template>
-                <template v-else-if="item.type === 2">
-                  <span class="group-count">{{ getOnlineCount(item.chatId) }} 人在线</span>
-                </template>
-                <template v-else>
-                  <span class="ai-text">🤖 AI助手</span>
-                </template>
-              </span>
-              <transition name="badge-bounce">
-                <el-badge :value="item.unreadCount" :max="99" v-if="item.unreadCount > 0" class="unread-badge" />
-              </transition>
+                  <transition name="badge-bounce">
+                    <span v-if="item.unreadCount > 0" class="unread-dot">
+                      {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
+                    </span>
+                  </transition>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </li>
-    </ul>
-  </div>
-  </div>
-  <AddFriendDialog ref="addFriendDialogRef" />
-  <AddGroupDialog ref="addGroupDialogRef" />
+          </li>
+        </transition-group>
+      </ul>
+    </div>
+    <AddFriendDialog ref="addFriendDialogRef" />
+    <AddGroupDialog ref="addGroupDialogRef" />
   </div>
 </template>
 
 <style scoped lang="scss">
-@keyframes badge-bounce-enter {
-  from { transform: scale(0); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+.cl-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .chat-list-container {
@@ -72,44 +89,67 @@
   overflow-y: auto;
   overflow-x: hidden;
   list-style: none;
-  padding: 4px 0;
+  padding: 6px 0;
   margin: 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(124,58,237,0.15) transparent;
+  scrollbar-color: rgba(124,58,237,0.2) transparent;
   &::-webkit-scrollbar { width: 3px; }
-  &::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.15); border-radius: 2px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(124,58,237,0.2);
+    border-radius: 999px;
+    &:hover { background: rgba(124,58,237,0.4); }
+  }
 }
 
+.chat-empty {
+  margin-top: 40px;
+  :deep(.el-empty__description p) {
+    color: var(--text-muted) !important;
+  }
+}
+
+/* 列表项 */
 .chat-list li {
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 12px;
   margin: 2px 8px;
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-}
 
-.chat-list li::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  border-radius: 0 2px 2px 0;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--chat-item-hover);
+    opacity: 0;
+    border-radius: 12px;
+    transition: opacity 0.2s ease;
+  }
 
-.chat-list li:hover {
-  background: rgba(124, 58, 237, 0.06);
-}
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 3px;
+    background: var(--brand-gradient-2);
+    border-radius: 0 3px 3px 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
 
-.chat-list li.active {
-  background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(168,85,247,0.08));
-}
+  &:hover {
+    transform: translateX(2px);
+    &::before { opacity: 1; }
+  }
 
-.chat-list li.active::before {
-  opacity: 1;
+  &.active {
+    background: var(--chat-item-active) !important;
+    &::before { opacity: 0; }
+    &::after  { opacity: 1; }
+
+    .chat-name { color: var(--color-primary); }
+  }
 }
 
 .chat-item {
@@ -117,49 +157,59 @@
   align-items: center;
   padding: 10px 12px;
   gap: 10px;
+  position: relative;
+  z-index: 1;
 }
 
+/* 头像 */
 .avatar-container {
   position: relative;
   flex-shrink: 0;
 }
 
 .avatar {
-  width: 44px;
-  height: 44px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255,255,255,0.8);
+  border: 2px solid var(--border-default);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
 }
 
-.online-status {
+.chat-list li:hover .avatar {
+  transform: scale(1.04);
+}
+
+.status-dot {
   position: absolute;
-  bottom: 1px;
-  right: 1px;
-  width: 11px;
-  height: 11px;
+  bottom: 1px; right: 1px;
+  width: 11px; height: 11px;
   border-radius: 50%;
-  background: #9ca3af;
-  border: 2px solid white;
+  background: var(--color-offline);
+  border: 2px solid var(--bg-base);
   transition: background 0.3s;
+
+  &.self {
+    background: #f59e0b;
+  }
+  &.online {
+    background: var(--color-online);
+    animation: pulse-online 2.5s infinite;
+  }
+  &.group {
+    background: var(--color-primary-light);
+  }
+  &.ai {
+    background: var(--color-accent);
+  }
 }
 
-.online-status.online {
-  background: #10b981;
-  box-shadow: 0 0 0 2px rgba(16,185,129,0.3);
-  animation: pulse-green 2s infinite;
+@keyframes pulse-online {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  50%       { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
 }
 
-.online-status.group {
-  background: #8b5cf6;
-}
-
-@keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
-  50%       { box-shadow: 0 0 0 4px rgba(16,185,129,0.1); }
-}
-
+/* 详情区 */
 .chat-details {
   flex: 1;
   min-width: 0;
@@ -169,26 +219,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .chat-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1e1b4b;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-}
-
-.active .chat-name {
-  color: #7c3aed;
+  transition: color 0.2s;
 }
 
 .chat-time {
-  font-size: 11px;
-  color: #9ca3af;
+  font-size: 10px;
+  color: var(--text-muted);
   flex-shrink: 0;
   margin-left: 8px;
 }
@@ -197,40 +244,92 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
 }
 
 .chat-preview {
-  font-size: 12px;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
-.online-text { color: #10b981; font-weight: 500; }
-.offline-text { color: #9ca3af; }
-.group-count { color: #8b5cf6; font-weight: 500; }
-.ai-text { color: #7c3aed; }
-
-.unread-badge {
-  flex-shrink: 0;
-  margin-left: 6px;
-}
-
-:deep(.unread-badge .el-badge__content) {
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  border: none;
+/* 标签 */
+.tag-self {
   font-size: 11px;
+  font-weight: 500;
+  color: #d97706;
+  background: rgba(245,158,11,0.12);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.tag-online {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-online);
+  background: rgba(16,185,129,0.1);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.tag-offline {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(148,163,184,0.1);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.tag-group {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-primary-light);
+  background: var(--color-primary-subtle);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.tag-ai {
+  font-size: 11px;
+  color: var(--color-accent);
+  background: rgba(6,182,212,0.1);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* 未读徽标 */
+.unread-dot {
+  flex-shrink: 0;
+  background: var(--brand-gradient-2);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
   min-width: 18px;
   height: 18px;
-  line-height: 18px;
-  padding: 0 4px;
-  border-radius: 9px;
-  box-shadow: 0 2px 6px rgba(124,58,237,0.4);
-  animation: badge-bounce-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.45);
 }
 
-.badge-bounce-enter-active { animation: badge-bounce-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.badge-bounce-leave-active { transition: all 0.2s; }
+/* 过渡动画 */
+.badge-bounce-enter-active {
+  animation: badge-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.badge-bounce-leave-active { transition: all 0.18s; }
 .badge-bounce-leave-to { transform: scale(0); opacity: 0; }
+
+@keyframes badge-in {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.chat-item-anim-enter-active {
+  animation: fadeInLeft 0.28s ease both;
+}
+.chat-item-anim-leave-active { transition: all 0.2s; }
+.chat-item-anim-leave-to { opacity: 0; transform: translateX(-10px); }
+
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 </style>
 
 <script setup>
@@ -357,11 +456,26 @@ const handleMessage = (message) => {
   } else if (message.type === 'ERROR') {
     ElMessage.error(message.content)
   } else {
-    if (message.chatId !== state.activeChatId) {
-      // 设置对应聊天消息未读数
-      const item = state.chatList.find((item) => item.chatId === message.chatId)
-      if (item) {
-        item.unreadCount += 1
+    // 仅对真实聊天消息（非系统通知）处理
+    const realMsgTypes = ['text', 'image', 'file', 'vote', 'location']
+    if (!realMsgTypes.includes(message.contentType)) return
+
+    // 更新对应聊天的最后一条消息预览
+    const chatItem = state.chatList.find((item) => item.chatId === message.chatId)
+    if (chatItem) {
+      chatItem.lastMessage = message.contentType === 'text'
+        ? message.content
+        : message.contentType === 'image' ? '[图片]'
+        : message.contentType === 'file' ? '[文件]'
+        : message.contentType === 'vote' ? '[投票]'
+        : '[位置]'
+      chatItem.lastTime = message.createTime
+    }
+
+    // 只有非本人发送的消息才增加未读计数
+    if (message.sendId !== userStore.user.id && message.chatId !== state.activeChatId) {
+      if (chatItem) {
+        chatItem.unreadCount = (chatItem.unreadCount || 0) + 1
       }
     }
   }

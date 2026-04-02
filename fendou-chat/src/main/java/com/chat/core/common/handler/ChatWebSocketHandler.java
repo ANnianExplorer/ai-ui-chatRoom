@@ -155,19 +155,19 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
             }
 
             // 处理正在输入消息（不保存，直接转发）
-            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.TYPING.name())) {
+            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.valueOf(MessageTypeEnum.TYPING.name()))) {
                 handleTypingMessage(jsonMessage);
                 return;
             }
 
             // 处理消息撤回
-            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.RECALL.name())) {
+            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.valueOf(MessageTypeEnum.RECALL.name()))) {
                 handleRecallMessage(jsonMessage);
                 return;
             }
 
             // 处理系统公告广播
-            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.SYSTEM_NOTICE.name())) {
+            if (MessageTypeEnum.isType(messageType, MessageTypeEnum.valueOf(MessageTypeEnum.SYSTEM_NOTICE.name()))) {
                 broadcastSystemNotice(jsonMessage);
                 return;
             }
@@ -198,6 +198,13 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
             if (chatId.contains("group")) {
                 log.info("群聊成员: {} 群聊消息: {}", groupMap, message);
                 
+                // 检查发送者账户状态（是否被管理员禁用）
+                User sender = userService.getUserById(message.getSendId());
+                if (sender == null || sender.getStatus() == 0) {
+                    sendToUser(message.getSendId(), MessageTypeEnum.ERROR, "您的账户已被禁用，无法发送消息！");
+                    return;
+                }
+                
                 // 检查群聊状态
                 Group group = groupService.getById(receiverId);
                 if (group == null || group.getStatus() == 0) {
@@ -220,6 +227,13 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
 
             // 处理好友消息
             else {
+                // 检查发送者账户状态（是否被管理员禁用）
+                User sender = userService.getUserById(message.getSendId());
+                if (sender == null || sender.getStatus() == 0) {
+                    sendToUser(message.getSendId(), MessageTypeEnum.ERROR, "您的账户已被禁用，无法发送消息！");
+                    return;
+                }
+                
                 String[] parts = chatId.split("-");
                 Integer user1 = Integer.parseInt(parts[1]);
                 int user2 = Integer.parseInt(parts[2]);
@@ -454,11 +468,8 @@ public class ChatWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
         Integer sendId = jsonMessage.getInteger("sendId");
         if (chatId == null || msgId == null || sendId == null) return;
 
-        // 更新数据库消息状态
-        Message recallMsg = new Message();
-        recallMsg.setId(msgId);
-        recallMsg.setIsRecalled(1);
-        messageService.updateById(recallMsg);
+        // 从数据库中物理删除消息（不需要 is_recalled 列，刷新后消息直接消失）
+        messageService.removeById(msgId);
 
         String jsonStr = jsonMessage.toJSONString();
         if (chatId.contains("group")) {
