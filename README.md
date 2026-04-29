@@ -15,7 +15,7 @@
 
 [English](#) | [简体中文](README.md)
 
-**面向现代团队与企业的高性能、AI 增强型实时通讯引擎**
+**面向现代团队与企业的高性能、AI 增强型实时通讯引擎（欢迎Star感谢😙）**
 
 🌐 **官方介绍站点**：[点击访问 FenDou Chat 主页](https://annianexplorer.github.io/ANnianAiClaw/)
 
