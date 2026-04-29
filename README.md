@@ -17,6 +17,8 @@
 
 **面向现代团队与企业的高性能、AI 增强型实时通讯引擎**
 
+🌐 **官方介绍站点**：[点击访问 FenDou Chat 主页](https://annianexplorer.github.io/ANnianAiClaw/)
+
 <br />
 
 </div>
